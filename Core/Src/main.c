@@ -31,8 +31,8 @@
 /* USER CODE BEGIN PTD */
 typedef enum State {Initial=1, Line_Search, TurnRight, Idle, Unknow} State;
 #define PWM_Mid 350  //无反馈时电机工作占空�??????????????????????????
-#define PWM_Lowest 150
-#define PWM_Higest 1100
+#define PWM_Lowest 370
+#define PWM_Higest 1000
 #define Turning_Error 2
 /* USER CODE END PTD */
 
@@ -536,7 +536,7 @@ int PID_Turning(float increment_angle)//If we want to turn right, parameter is n
 			float Error = 0;
 			float Error_Total=0;
 			float PID_Input_Pre=0;			//上一个循环Input
-			float KP=6, KI=0.105, KD=3;
+			float KP=15, KI=0.1, KD=0;
 			int t=0;
 			uint8_t Flag=0; //Indicate that if verifying process begin.
 			for(int i=0;i<10;i++)			//Get average initial direction
