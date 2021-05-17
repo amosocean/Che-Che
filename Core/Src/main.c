@@ -599,6 +599,10 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 
 		  for(;;)
 		  {
+			  if(state == Idle)
+			  		  {
+			  			  return 1;
+			  		  }
 			  	 PID_Input = angle.z;
 			  	 Error=Angle_Diff(PID_target, PID_Input);
 			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
@@ -700,6 +704,7 @@ uint8_t State_Transition(State* current_state)
 		return 1;
 	else
 	{
+
 		*current_state=next_state;
 		return 0;
 	}
@@ -776,13 +781,22 @@ void StreamTask(void const * argument)
 	  switch(state)
 	  {
 	  case Initial:
+		  	  	  	  	  state= Idle;
+		  	  	  	  	  delay(500);
+		  	  	  	      state= Initial;
 		  	  	  	  	  Car_Initial();
 		  	  	  	  	  break;
 	  case Line_Search:
+		  	  	  	  	  state= Idle;
+		  		  	  	  delay(500);
+		  		  	  	  state= Line_Search;
 		  	  	  	  	  vTaskResume(PIDCameraHandle);
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  break;
 	  case TurnRight:
+	  	  	  	  	  	  state= Idle;
+	  	  	  	  	  	  delay(500);
+	  	  	  	  	  	  state= TurnRight;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Turning(-90,2);
 		  	  	  	  	  Car_Stop();
@@ -815,6 +829,11 @@ void PIDCameraTask(void const * argument)
 	  /* Infinite loop */
 	  for(;;)
 	  {
+		  if(state == Idle)
+		  {
+			  vTaskSuspend(PIDCameraHandle);
+			  continue;
+		  }
 		     HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 		  	 delay(10);
 		  	 //Data=0x03E8;
@@ -852,6 +871,11 @@ void GyroReceiveTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  if(state == Idle)
+	  		  {
+	  			  vTaskSuspend(GyroReceiveHandle);
+	  			  continue;
+	  		  }
 	  delay(10);
 	  uint8_t AxH=0, AxL=0;
 	  int16_t Ax=0;
