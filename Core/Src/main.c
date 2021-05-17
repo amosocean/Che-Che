@@ -15,7 +15,7 @@
   *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
-	UART中断已禁�????????????????????? 输入恒定1000
+
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
@@ -30,23 +30,25 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef enum State {Initial=1, Line_Search, TurnRight, Idle, Unknow} State;
-#define PWM_Mid 350  //无反馈时电机工作占空�??????????????????????????
-#define PWM_Lowest 370
-#define PWM_Higest 1000
-#define Turning_Error 2
+typedef struct Angle
+{
+	float  x;
+	float  y;
+	float  z;
+} Angle;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-typedef struct Angle
-{
-	float  yaw;
-} Angle;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define PWM_Mid 350  //无反馈时电机工作占空
+#define PWM_Lowest 400
+#define PWM_Higest 1000 //for our motor, this value should less than 1300
+#define Angle_stable_cycles 100000
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -92,7 +94,9 @@ void Car_Stop(void);
 uint8_t State_Transition(State* current_state);
 void PWM_SET_LEFT(int32_t duty);
 void PWM_SET_RIGHT(int32_t duty);
-int PID_Turning(float increment_angle);
+float Angle_Diff(float target, float input);
+//int Angle_Stable_Check(float Error, float Accept_Error, int wait_cycles);
+int PID_Turning(float increment_angle,float Accept_Error);
 void delay(uint32_t time_ms);
 /* USER CODE END PFP */
 
@@ -508,8 +512,6 @@ void Car_Initial(void)
 	taskEXIT_CRITICAL();
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
-
-
 }
 
 void Car_Stop(void)
@@ -524,24 +526,67 @@ void delay(uint32_t time_ms)
 	osDelayUntil(&PreviousWakeTime, time_ms);
 }
 
-int PID_Turning(float increment_angle)//If we want to turn right, parameter is negative
+float Angle_Diff(float target, float input)
+{
+	float Error;
+	if(target > 180)
+		target=-360+target;
+	else if(target <-180)
+		target=360+target;
+	Error = target - input;
+		if(Error >= 180)
+			Error=Error-360;
+		else if(Error <= -180)
+			Error=Error+360;
+	return Error;
+}
+
+//int Angle_Stable_Check(float Error, float Accept_Error, int wait_cycles, uint8_t* pFlag, int* pt)
+//{
+//#define Flag *Flag
+//#define t *t
+// 	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
+// 	 {
+// 		 t++;
+// 		if(t>2)
+// 		{
+// 			Flag = 1;
+// 			t=0;
+// 		}
+// 	 }
+// 	 if(Flag)
+// 	 {
+// 		if(t>wait_cycles)
+// 		{
+// 			Flag=0;
+// 			t=0;
+// 			return 0;
+// 		}
+// 		else if((Error > -Accept_Error) && (Error < Accept_Error))
+// 		{
+// 			t++;
+// 		}
+// 		else
+// 		{
+// 			Flag=0;
+// 			t=0;
+// 		}
+// 	 }
+//}
+
+int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn right, parameter is negative
 {
 			float PID_target=0;
 			float PID_Error_Last=0;
-			float PID_Error_Pre=0;
 			float initial_yaw=0;
-			float PID_Output_Add=0;
-			float PID_Output=0;                    // PWM增量，PWM输出占空�?????????????????????????
-			float PID_Input=0;
-			float Error = 0;
-			float Error_Total=0;
-			float PID_Input_Pre=0;			//上一个循环Input
+			float PID_Output=0,PID_Input=0;;
+			float Error = 0, Error_Total=0;
 			float KP=15, KI=0.1, KD=0;
 			int t=0;
 			uint8_t Flag=0; //Indicate that if verifying process begin.
 			for(int i=0;i<10;i++)			//Get average initial direction
 			{
-				initial_yaw+=angle.yaw;
+				initial_yaw+=angle.z;
 				delay(50);
 			}
 			initial_yaw=initial_yaw/10;
@@ -552,16 +597,11 @@ int PID_Turning(float increment_angle)//If we want to turn right, parameter is n
 				PID_target=360+PID_target;
 			HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 
-		  /* Infinite loop */
 		  for(;;)
 		  {
-			  	 PID_Input = angle.yaw;
-			  	 Error = PID_target - PID_Input;
-			  	 if(Error >= 180)
-			  		 Error=Error-360;
-			  	 else if(Error <= -180)
-			  		 Error=Error+360;
-			  	 if(( (Error > -Turning_Error) && (Error < Turning_Error) ) && Flag == 0)
+			  	 PID_Input = angle.z;
+			  	 Error=Angle_Diff(PID_target, PID_Input);
+			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
 			  	 {
 			  		 t++;
 			  		if(t>2)
@@ -572,13 +612,13 @@ int PID_Turning(float increment_angle)//If we want to turn right, parameter is n
 			  	 }
 			  	 if(Flag)
 			  	 {
-			  		if(t>100000)
+			  		if(t>Angle_stable_cycles)
 			  		{
 			  			Flag=0;
 			  			t=0;
 			  			return 0;
 			  		}
-			  		else if((Error > -Turning_Error) && (Error < Turning_Error))
+			  		else if((Error > -Accept_Error) && (Error < Accept_Error))
 			  		{
 			  			t++;
 			  		}
@@ -588,15 +628,11 @@ int PID_Turning(float increment_angle)//If we want to turn right, parameter is n
 			  			t=0;
 			  		}
 			  	 }
-			     PID_Output = KP * Error  + 																			// 积分
+			     PID_Output = KP * Error  +
 			 				  KD * (Error - PID_Error_Last ) +
 							  Error_Total;
 			     Error_Total=Error_Total+KI*Error;
-			     //PID_Output_Add=(PID_Output_Add^2)/20;
-			     PID_Output = PID_Output + PID_Output_Add;
-			 	 PID_Error_Pre = PID_Error_Last;
 			     PID_Error_Last = Error;
-			     PID_Input_Pre = PID_Input;
 			     if(PID_Output >= 0)
 			     {
 			    	 if(PID_Output > PWM_Higest)
@@ -619,9 +655,7 @@ int PID_Turning(float increment_angle)//If we want to turn right, parameter is n
 			    	 PWM_SET_LEFT((int32_t)(-PID_Output));
 			    	 taskEXIT_CRITICAL();
 			     }
-
 			     delay(2);
-
 		  }
 }
 
@@ -750,7 +784,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case TurnRight:
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  PID_Turning(-90);
+		  	  	  	  	  PID_Turning(-90,2);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  default :
@@ -796,7 +830,6 @@ void PIDCameraTask(void const * argument)
 		     PID_Output_Add = Kp * (Error - PID_Error_Last) + 										// 比例
 		 							Ki * Error +																		// 积分
 		 							Kd * (Error - 2.0f * PID_Error_Last + PID_Error_Pre);	  // 微分
-		               //+1;  // 加一的目的是如果输出信号�?????????????????????????0时，系统将进入失控状�?????????????????????????
 		     //PID_Output_Add=(PID_Output_Add^2)/20;
 		     PID_Output = PID_Output + PID_Output_Add;		              // 原始�?????????????????????????+增量 = 输出�?????????????????????????
 
@@ -831,13 +864,18 @@ void GyroReceiveTask(void const * argument)
   for(;;)
   {
 	  delay(10);
+	  uint8_t AxH=0, AxL=0;
+	  int16_t Ax=0;
+
+	  uint8_t AyH=0,AyL=0;
+	  int16_t Ay=0;
+
+	  uint8_t YawH=0,YawL=0;
 	  int16_t Yaw=0;
-	  uint8_t YawH=0;
-	  uint8_t YawL=0;
+
 	  uint8_t sum=0;
 	  int i=0;
 	  int h=0;
-	  Yaw=0;
 	  uint8_t GyroData[21]={0};
 	  taskENTER_CRITICAL();
 	  HAL_UART_Receive(&huart3, (uint8_t *) &GyroData, sizeof(GyroData), 0xFFFF);
@@ -861,13 +899,25 @@ void GyroReceiveTask(void const * argument)
 	  }
 	  	  if (sum!=GyroData[h+10])
 	  		  continue;
+	  AxL=GyroData[h+2];
+	  AxH=GyroData[h+3];
+
+	  AyL=GyroData[h+4];
+	  AyH=GyroData[h+5];
+
 	  YawL=GyroData[h+6];
 	  YawH=GyroData[h+7];
+
+	  Ax=((((int16_t) AxH)<<8) | AxL);
+	  Ay=((((int16_t) AyH)<<8) | AyL);
 	  Yaw=((((int16_t) YawH)<<8) | YawL);
+
 	  taskENTER_CRITICAL();
 	  HAL_UART_Transmit(&huart1, (uint8_t *) &Yaw, sizeof(Yaw), 0xFFFF);
 	  taskEXIT_CRITICAL();
-	  angle.yaw=(((float)Yaw) / 32768.0 * 180.0);
+	  angle.x=(((float)Ax) / 32768.0 * 180.0);
+	  angle.y=(((float)Ay) / 32768.0 * 180.0);
+	  angle.z=(((float)Yaw) / 32768.0 * 180.0);
   }
   /* USER CODE END GyroReceiveTask */
 }
