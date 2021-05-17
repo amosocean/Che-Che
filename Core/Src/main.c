@@ -806,16 +806,12 @@ void StreamTask(void const * argument)
 void PIDCameraTask(void const * argument)
 {
   /* USER CODE BEGIN PIDCameraTask */
-	// 2.增量式PID控制�?????????????????????????
 		vTaskSuspend(PIDCameraHandle);
 		float PID_Error_Last=0;
-		float PID_Error_Pre=0;          // 上一次偏差�?�，上上次误�?????????????????????????
-		float PID_Output_Add=0;
-		float PID_Output=1000;                    // PWM增量，PWM输出占空�?????????????????????????
-		int32_t PID_Input=0;
-		float Error = 0;
+		float PID_Output=1000;                    // PWM输出占空
 		float PWM_Add=0;
-		int32_t PID_Input_Pre=0;			//上一个循环Input
+		float Error = 0, Error_Total=0;
+		int32_t PID_Input=0;
 	  /* Infinite loop */
 	  for(;;)
 	  {
@@ -823,28 +819,21 @@ void PIDCameraTask(void const * argument)
 		  	 delay(10);
 		  	 //Data=0x03E8;
 		  	 PID_Input = (Camera_Data & (0x07FF));
-		  	 if ((PID_Input == PID_Input_Pre) || (PID_Input == 0))
+		  	 if (PID_Input == 0)
 		  		 continue;
-		  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标速度 - 实际速度
-
-		     PID_Output_Add = Kp * (Error - PID_Error_Last) + 										// 比例
-		 							Ki * Error +																		// 积分
-		 							Kd * (Error - 2.0f * PID_Error_Last + PID_Error_Pre);	  // 微分
-		     //PID_Output_Add=(PID_Output_Add^2)/20;
-		     PID_Output = PID_Output + PID_Output_Add;		              // 原始�?????????????????????????+增量 = 输出�?????????????????????????
-
-		 	 PID_Error_Pre = PID_Error_Last;	      // 保存上上次误�?????????????????????????
-		     PID_Error_Last = Error;	            // 保存上次偏差
-		     PID_Input_Pre = PID_Input;
-		     if(PID_Output > 2000) PID_Output =2000;	    // 限幅，这个占比就根据你后面ARR寄存器，TIMx_CCRx寄存器中的�?�来呗�?�你�?????????????????????????1000对应50%占空比你就让这里pwm做TIMx_CCRx寄存器的值ARR值设�?????????????????????????2000
+		  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
+		  	 PID_Output = Kp * Error  +
+		  				  Kd * (Error - PID_Error_Last ) +
+		  				  Error_Total;
+		  	 Error_Total=Error_Total+Ki*Error;
+		  	 PID_Error_Last = Error;
+		     if(PID_Output > 2000) PID_Output =2000;	    // 限幅
 		     if(PID_Output <1) PID_Output = 1;
 		     PWM_Add = PID_Output - 1000;
 		     taskENTER_CRITICAL();
 		     PWM_SET_RIGHT ((PWM_Mid + (int32_t)PWM_Add / 2));
 		     PWM_SET_LEFT ((PWM_Mid - (int32_t)PWM_Add / 2));
 		     taskEXIT_CRITICAL();
-
-
 	  }
   /* USER CODE END PIDCameraTask */
 }
