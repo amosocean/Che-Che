@@ -29,13 +29,18 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum State {Initial=1, Line_Search, TurnRight, Idle, Unknow} State;
+typedef enum State {Initial=1, Line_Search, TurnRight, GoStraight, Idle, Unknow} State;
 typedef struct Angle
 {
 	float  x;
 	float  y;
 	float  z;
 } Angle;
+typedef struct Distance
+{
+	float  front;
+	float  right;
+} Distance;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -45,7 +50,7 @@ typedef struct Angle
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 350  //无反馈时电机工作占空
+#define PWM_Mid 400  //无反馈时电机工作占空
 #define PWM_Lowest 400
 #define PWM_Higest 1000 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 100000
@@ -55,6 +60,7 @@ typedef struct Angle
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
+UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
@@ -62,16 +68,20 @@ UART_HandleTypeDef huart3;
 osThreadId StreamHandle;
 osThreadId PIDCameraHandle;
 osThreadId GyroReceiveHandle;
+osThreadId DistanceCheckHandle;
 /* USER CODE BEGIN PV */
 State state;
 volatile uint8_t Rx_Buf[2]={0,0};
 //volatile uint8_t OpenmvData[2]={0,0};
 volatile uint16_t Camera_Data=0x0000;
-Angle angle={0.0};
+Angle angle={0.0,0.0,0.0};
+Distance critical_distance={0.0,0.0};
+Distance current_distance={0.0,0.0};
+int distance_flag=0;
 
 //PID PV
 volatile uint16_t PID_Target=1000;
-volatile float Kp = 12, Ki = 0.09, Kd =8;     // PID系数，这里只用到PI控制�??????????????????????????
+volatile float Kp = 12, Ki = 0.09, Kd =8;     // PID系数，这里只用到PI控制�????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -84,9 +94,11 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_UART5_Init(void);
 void StreamTask(void const * argument);
 void PIDCameraTask(void const * argument);
 void GyroReceiveTask(void const * argument);
+void DistanceCheckTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void Car_Initial(void);
@@ -97,6 +109,7 @@ void PWM_SET_RIGHT(int32_t duty);
 float Angle_Diff(float target, float input);
 //int Angle_Stable_Check(float Error, float Accept_Error, int wait_cycles);
 int PID_Turning(float increment_angle,float Accept_Error);
+Distance Ultrasonic_Feedback(void);
 void delay(uint32_t time_ms);
 /* USER CODE END PFP */
 
@@ -138,6 +151,7 @@ int main(void)
   MX_TIM4_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_UART5_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   /* USER CODE END 2 */
@@ -170,6 +184,10 @@ int main(void)
   /* definition and creation of GyroReceive */
   osThreadDef(GyroReceive, GyroReceiveTask, osPriorityNormal, 0, 128);
   GyroReceiveHandle = osThreadCreate(osThread(GyroReceive), NULL);
+
+  /* definition and creation of DistanceCheck */
+  osThreadDef(DistanceCheck, DistanceCheckTask, osPriorityIdle, 0, 128);
+  DistanceCheckHandle = osThreadCreate(osThread(DistanceCheck), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -356,6 +374,39 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief UART5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART5_Init(void)
+{
+
+  /* USER CODE BEGIN UART5_Init 0 */
+
+  /* USER CODE END UART5_Init 0 */
+
+  /* USER CODE BEGIN UART5_Init 1 */
+
+  /* USER CODE END UART5_Init 1 */
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 115200;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX_RX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART5_Init 2 */
+
+  /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -469,6 +520,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, LEDBlue_Pin|LEDGreen_Pin, GPIO_PIN_RESET);
@@ -507,8 +559,8 @@ void Car_Initial(void)
 {
 	taskENTER_CRITICAL();
 	state=Initial;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
@@ -663,6 +715,21 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 		  }
 }
 
+Distance Ultrasonic_Feedback(void)
+{
+	uint8_t info=0xA0;
+	uint8_t Rx_Buf[3]={0,0,0};
+	uint32_t Data=0x00000000;
+	Distance distance={0.0,0.0};
+	HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
+	HAL_UART_Receive(&huart5,(uint8_t*) &Rx_Buf,3,1000);
+	Data=Data | (((uint32_t) (Rx_Buf[0]))<<16);
+	Data=Data | (((uint32_t) (Rx_Buf[1]))<<8);
+	Data=Data|((uint32_t) (Rx_Buf[2]));
+	distance.front=Data/1000;
+	return distance;
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
   	if (huart->Instance==USART2){
@@ -689,7 +756,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = TurnRight;
+					next_state = GoStraight;
 					break;
 		case Line_Search:
 					next_state = Line_Search;
@@ -697,6 +764,11 @@ uint8_t State_Transition(State* current_state)
 		case TurnRight:
 					next_state = TurnRight;
 					break;
+		case GoStraight:
+					if(distance_flag==0)
+						next_state = GoStraight;
+					else
+						next_state = Idle;
 		default:
 					next_state = Initial;
 	}
@@ -771,7 +843,7 @@ void StreamTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
+
 	  delay(50);
 	  //PreviousWakeTime = osKernelSysTick()
 	  //osDelayUntil(&PreviousWakeTime = osKernelSysTick(), 500);
@@ -801,6 +873,16 @@ void StreamTask(void const * argument)
 		  	  	  	  	  PID_Turning(-90,2);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
+	  case GoStraight:
+		  	  	  	  	  state= Idle;
+		  	  	  	  	  delay(500);
+		  	  	  	  	  state= GoStraight;
+		  	  	  	  	  critical_distance.front=100;
+		  	  	  	  	  vTaskResume(DistanceCheckHandle);
+		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
+		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
+	  case Idle:
+		  	  	  	  	  Car_Stop();
 	  default :
 		  	  	  	  	  Car_Initial();
 	  }
@@ -933,6 +1015,48 @@ void GyroReceiveTask(void const * argument)
 	  angle.z=(((float)Yaw) / 32768.0 * 180.0);
   }
   /* USER CODE END GyroReceiveTask */
+}
+
+/* USER CODE BEGIN Header_DistanceCheckTask */
+/**
+* @brief Function implementing the DistanceCheck thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_DistanceCheckTask */
+void DistanceCheckTask(void const * argument)
+{
+  /* USER CODE BEGIN DistanceCheckTask */
+	vTaskSuspend(DistanceCheckHandle);
+  /* Infinite loop */
+  for(;;)
+  {
+	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
+	  if(state == Idle)
+	  	  {
+	  	  	  vTaskSuspend(DistanceCheckHandle);
+	  	  	  continue;
+	  	  }
+	  Distance distance={0.0,0.0};
+	  Distance temp=Ultrasonic_Feedback();
+	  for(int i=0;i<2;i++)
+	  {
+		  distance.front+=temp.front;
+	  	  delay(200);
+	  }
+	  distance.front/=2;
+	  if(distance.front < critical_distance.front)
+	  {
+		  distance_flag=1;
+	  }
+	  else
+	  {
+		  distance_flag=0;
+	  }
+
+    osDelay(1);
+  }
+  /* USER CODE END DistanceCheckTask */
 }
 
  /**
