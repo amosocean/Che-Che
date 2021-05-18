@@ -50,10 +50,10 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 400  //无反馈时电机工作占空
-#define PWM_Lowest 400
+#define PWM_Mid 470  //无反馈时电机工作占空
+#define PWM_Lowest 470
 #define PWM_Higest 1000 //for our motor, this value should less than 1300
-#define Angle_stable_cycles 100000
+#define Angle_stable_cycles 500
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -72,16 +72,18 @@ osThreadId DistanceCheckHandle;
 /* USER CODE BEGIN PV */
 State state;
 volatile uint8_t Rx_Buf[2]={0,0};
+uint8_t Rx_Buf_Sonic[3]={0,0,0};
 //volatile uint8_t OpenmvData[2]={0,0};
 volatile uint16_t Camera_Data=0x0000;
 Angle angle={0.0,0.0,0.0};
+//Distance distance={0.0,0.0};
 Distance critical_distance={0.0,0.0};
-Distance current_distance={0.0,0.0};
+Distance current_distance={0,0};
 int distance_flag=0;
 
 //PID PV
 volatile uint16_t PID_Target=1000;
-volatile float Kp = 12, Ki = 0.09, Kd =8;     // PID系数，这里只用到PI控制�????????????????????????????
+volatile float Kp = 12, Ki = 0.09, Kd =8;     // PID系数，这里只用到PI控制�?????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -154,6 +156,9 @@ int main(void)
   MX_UART5_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+
+
+  //HAL_UART_Receive_IT(&huart5,(uint8_t*) &Rx_Buf_Sonic,3);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -186,7 +191,7 @@ int main(void)
   GyroReceiveHandle = osThreadCreate(osThread(GyroReceive), NULL);
 
   /* definition and creation of DistanceCheck */
-  osThreadDef(DistanceCheck, DistanceCheckTask, osPriorityIdle, 0, 128);
+  osThreadDef(DistanceCheck, DistanceCheckTask, osPriorityNormal, 0, 128);
   DistanceCheckHandle = osThreadCreate(osThread(DistanceCheck), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -389,7 +394,7 @@ static void MX_UART5_Init(void)
 
   /* USER CODE END UART5_Init 1 */
   huart5.Instance = UART5;
-  huart5.Init.BaudRate = 115200;
+  huart5.Init.BaudRate = 9600;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
   huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_NONE;
@@ -559,8 +564,8 @@ void Car_Initial(void)
 {
 	taskENTER_CRITICAL();
 	state=Initial;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
@@ -651,10 +656,10 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 
 		  for(;;)
 		  {
-			  if(state == Idle)
-			  		  {
-			  			  return 1;
-			  		  }
+//			  if(state == Idle)
+//			  		  {
+//			  			  return 1;
+//			  		  }
 			  	 PID_Input = angle.z;
 			  	 Error=Angle_Diff(PID_target, PID_Input);
 			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
@@ -722,10 +727,12 @@ Distance Ultrasonic_Feedback(void)
 	uint32_t Data=0x00000000;
 	Distance distance={0.0,0.0};
 	HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
+	//delay(200);
 	HAL_UART_Receive(&huart5,(uint8_t*) &Rx_Buf,3,1000);
 	Data=Data | (((uint32_t) (Rx_Buf[0]))<<16);
 	Data=Data | (((uint32_t) (Rx_Buf[1]))<<8);
-	Data=Data|((uint32_t) (Rx_Buf[2]));
+	Data=Data |((uint32_t) (Rx_Buf[2]));
+	HAL_UART_Transmit(&huart1, (uint8_t *) &Data, sizeof(Data), 0xFFFF);
 	distance.front=Data/1000;
 	return distance;
 }
@@ -748,6 +755,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		/*if (Rx_Cnt>20)
   			Rx_Cnt=0;*/
   	}
+//  	else if (huart->Instance==UART5){
+//  			uint8_t info=0xA0;
+//  			uint32_t Data=0x00000000;
+//
+//  			Data=Data | (((uint32_t) (Rx_Buf_Sonic[0]))<<16);
+//  			Data=Data | (((uint32_t) (Rx_Buf_Sonic[1]))<<8);
+//  			Data=Data |((uint32_t) (Rx_Buf_Sonic[2]));
+//  			HAL_UART_Transmit(&huart1, (uint8_t *) &Data, sizeof(Data), 0xFFFF);
+//  			distance.front=Data/1000;
+//  			Rx_Buf_Sonic[0]=0;
+//  			Rx_Buf_Sonic[1]=0;
+//  			Rx_Buf_Sonic[2]=0;
+//  			HAL_UART_Receive_IT(&huart5,(uint8_t*) &Rx_Buf_Sonic,3);
+//  			HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
+//  		}
   }
 
 uint8_t State_Transition(State* current_state)
@@ -762,13 +784,14 @@ uint8_t State_Transition(State* current_state)
 					next_state = Line_Search;
 					break;
 		case TurnRight:
-					next_state = TurnRight;
+					next_state = GoStraight;
 					break;
 		case GoStraight:
 					if(distance_flag==0)
 						next_state = GoStraight;
 					else
-						next_state = Idle;
+						next_state = TurnRight;
+					break;
 		default:
 					next_state = Initial;
 	}
@@ -847,6 +870,7 @@ void StreamTask(void const * argument)
 	  delay(50);
 	  //PreviousWakeTime = osKernelSysTick()
 	  //osDelayUntil(&PreviousWakeTime = osKernelSysTick(), 500);
+	  //HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
 	  Same_State_Flag = State_Transition(&state);
 	  if(Same_State_Flag)
 		  continue;
@@ -869,18 +893,21 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  state= Idle;
 	  	  	  	  	  	  delay(500);
 	  	  	  	  	  	  state= TurnRight;
+	  	  	  	  	  	  distance_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  PID_Turning(-90,2);
+		  	  	  	  	  PID_Turning(-180,15);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  case GoStraight:
 		  	  	  	  	  state= Idle;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  state= GoStraight;
-		  	  	  	  	  critical_distance.front=100;
+		  	  	  	  	  critical_distance.front=500;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
+		  	  	  	  	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
+		  	  	  	  	  break;
 	  case Idle:
 		  	  	  	  	  Car_Stop();
 	  default :
@@ -1031,30 +1058,31 @@ void DistanceCheckTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
-	  if(state == Idle)
-	  	  {
-	  	  	  vTaskSuspend(DistanceCheckHandle);
-	  	  	  continue;
-	  	  }
+
+//	  if(state == Idle)
+//	  	  {
+//	  	  	  vTaskSuspend(DistanceCheckHandle);
+//	  	  	  continue;
+//	  	  }
 	  Distance distance={0.0,0.0};
 	  Distance temp=Ultrasonic_Feedback();
-	  for(int i=0;i<2;i++)
+	  //Distance temp=distance;
+	  for(int i=0;i<1;i++)
 	  {
 		  distance.front+=temp.front;
-	  	  delay(200);
+	  	  delay(100);
 	  }
-	  distance.front/=2;
+	  distance.front/=1;
 	  if(distance.front < critical_distance.front)
 	  {
 		  distance_flag=1;
+		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);
 	  }
 	  else
 	  {
 		  distance_flag=0;
+		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_RESET);
 	  }
-
-    osDelay(1);
   }
   /* USER CODE END DistanceCheckTask */
 }
