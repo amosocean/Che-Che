@@ -732,7 +732,7 @@ Distance Ultrasonic_Feedback(void)
 	Data=Data | (((uint32_t) (Rx_Buf[0]))<<16);
 	Data=Data | (((uint32_t) (Rx_Buf[1]))<<8);
 	Data=Data |((uint32_t) (Rx_Buf[2]));
-	HAL_UART_Transmit(&huart1, (uint8_t *) &Data, sizeof(Data), 0xFFFF);
+	HAL_UART_Transmit(&huart1, (uint8_t *) &Data, 4, 0xFFFF);
 	distance.front=Data/1000;
 	return distance;
 }
@@ -868,6 +868,7 @@ void StreamTask(void const * argument)
   {
 
 	  delay(50);
+	  //delay(10);
 	  //PreviousWakeTime = osKernelSysTick()
 	  //osDelayUntil(&PreviousWakeTime = osKernelSysTick(), 500);
 	  //HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
@@ -891,7 +892,8 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case TurnRight:
 	  	  	  	  	  	  state= Idle;
-	  	  	  	  	  	  delay(500);
+	  	  	  	  	  	  Car_Stop();
+	  	  	  	  	  	  delay(50);
 	  	  	  	  	  	  state= TurnRight;
 	  	  	  	  	  	  distance_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
@@ -902,7 +904,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  state= Idle;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  state= GoStraight;
-		  	  	  	  	  critical_distance.front=500;
+		  	  	  	  	  critical_distance.front=150;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);

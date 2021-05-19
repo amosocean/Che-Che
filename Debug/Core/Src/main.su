@@ -18,8 +18,8 @@ main.c:775:9:State_Transition	24	static
 main.c:808:6:PWM_SET_LEFT	16	static
 main.c:829:6:PWM_SET_RIGHT	16	static
 main.c:860:6:StreamTask	24	static
-main.c:929:6:PIDCameraTask	40	static
-main.c:976:6:GyroReceiveTask	64	static
-main.c:1054:6:DistanceCheckTask	40	static
-main.c:1098:6:HAL_TIM_PeriodElapsedCallback	16	static
-main.c:1115:6:Error_Handler	4	static,ignoring_inline_asm
+main.c:931:6:PIDCameraTask	40	static
+main.c:978:6:GyroReceiveTask	64	static
+main.c:1056:6:DistanceCheckTask	40	static
+main.c:1100:6:HAL_TIM_PeriodElapsedCallback	16	static
+main.c:1117:6:Error_Handler	4	static,ignoring_inline_asm
