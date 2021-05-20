@@ -685,7 +685,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = TurnRight;
+					next_state = Line_Search;
 					break;
 		case Line_Search:
 					next_state = Line_Search;

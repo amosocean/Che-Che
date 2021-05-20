@@ -2594,8 +2594,8 @@ uint8_t State_Transition(State* current_state)
  80017b4:	e008      	b.n	80017c8 <State_Transition+0x34>
 	{
 		case Initial:
-					next_state = TurnRight;
- 80017b6:	2303      	movs	r3, #3
+					next_state = Line_Search;
+ 80017b6:	2302      	movs	r3, #2
  80017b8:	73fb      	strb	r3, [r7, #15]
 					break;
  80017ba:	e007      	b.n	80017cc <State_Transition+0x38>
