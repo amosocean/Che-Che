@@ -50,7 +50,7 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 500  //无反馈时电机工作占空
+#define PWM_Mid 600  //无反馈时电机工作占空
 #define PWM_Lowest 300
 #define PWM_Higest 1300 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 500
@@ -80,10 +80,11 @@ Angle angle={0.0,0.0,0.0};
 Distance critical_distance={0.0,0.0};
 Distance current_distance={0,0};
 int distance_flag=0;
+int camera_ready_flag=0;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 7, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -748,6 +749,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		//HAL_UART_AbortReceive_IT(&huart1);
   		Rx_Buf[0]=0;
   		Rx_Buf[1]=0;
+  		camera_ready_flag=1;
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 
 
@@ -875,6 +877,7 @@ void StreamTask(void const * argument)
 	  //PreviousWakeTime = osKernelSysTick()
 	  //osDelayUntil(&PreviousWakeTime = osKernelSysTick(), 500);
 	  //HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
+	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 	  Same_State_Flag = State_Transition(&state);
 	  if(Same_State_Flag)
 		  continue;
@@ -891,7 +894,7 @@ void StreamTask(void const * argument)
 		  		  	  	  delay(500);
 		  		  	  	  state= Line_Search;
 		  	  	  	  	  vTaskResume(PIDCameraHandle);
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+		  	  	  	  	  //vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  break;
 	  case TurnRight:
 	  	  	  	  	  	  state= Idle;
@@ -947,9 +950,13 @@ void PIDCameraTask(void const * argument)
 			  vTaskSuspend(PIDCameraHandle);
 			  continue;
 		  }
-		     HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
+		  	 if(camera_ready_flag==0)
+		  		 continue;
+		  	 camera_ready_flag=0;
+
 		  	 delay(10);
 		  	 //Data=0x03E8;
+		  	 //PID_Input=-300;
 		  	 PID_Input = (Camera_Data & (0x07FF))-1000;
 		  	 if (PID_Input == -1000)
 		  		 continue;
@@ -959,12 +966,16 @@ void PIDCameraTask(void const * argument)
 		  				  Error_Total;
 		  	 Error_Total=Error_Total+Ki*Error;
 		  	 PID_Error_Last = Error;
-		    // if(PID_Output > 2000-PWM_Mid) 			PID_Output =	2000-PWM_Mid;	    // 限幅
-		     //else if(PID_Output <-(2000-PWM_Mid)) 	PID_Output = 	-(2000-PWM_Mid);
-		     taskENTER_CRITICAL();
+		  	 if(PID_Output < 0)
+		  		 PID_Output-=PWM_Lowest;
+		  	 else
+		  		 PID_Output+=PWM_Lowest;
+		     if(PID_Output > PWM_Higest-PWM_Mid) 			PID_Output =	2000-PWM_Mid;	    // 限幅
+		     else if(PID_Output <-(PWM_Higest-PWM_Mid)) 	PID_Output = 	-(2000-PWM_Mid);
+		     //taskENTER_CRITICAL();
 		     PWM_SET_RIGHT ((PWM_Mid + (int32_t) PID_Output));
 		     PWM_SET_LEFT  ((PWM_Mid - (int32_t) PID_Output));
-		     taskEXIT_CRITICAL();
+		     //taskEXIT_CRITICAL();
 	  }
   /* USER CODE END PIDCameraTask */
 }
