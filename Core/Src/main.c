@@ -50,10 +50,10 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 600  //无反馈时电机工作占空
-#define PWM_Lowest 300
-#define PWM_Higest 1300 //for our motor, this value should less than 1300
-#define Angle_stable_cycles 500
+#define PWM_Mid 1000  //无反馈时电机工作占空
+#define PWM_Lowest 550
+#define PWM_Higest 1600 //for our motor, this value should less than 1300
+#define Angle_stable_cycles 6
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -81,6 +81,7 @@ Distance critical_distance={0.0,0.0};
 Distance current_distance={0,0};
 int distance_flag=0;
 int camera_ready_flag=0;
+int gyro_ready_flag=0;
 
 //PID PV
 volatile uint16_t PID_Target=0;
@@ -587,9 +588,9 @@ void delay(uint32_t time_ms)
 float Angle_Diff(float target, float input)
 {
 	float Error;
-	if(target > 180)
+	if(target >= 180)
 		target=-360+target;
-	else if(target <-180)
+	else if(target <=-180)
 		target=360+target;
 	Error = target - input;
 		if(Error >= 180)
@@ -639,21 +640,29 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			float initial_yaw=0;
 			float PID_Output=0,PID_Input=0;;
 			float Error = 0, Error_Total=0;
-			float KP=15, KI=0.1, KD=0;
+			float KP=7, KI=0.05, KD=0;
 			int t=0;
 			uint8_t Flag=0; //Indicate that if verifying process begin.
-			for(int i=0;i<10;i++)			//Get average initial direction
+			Car_Stop();
+			//delay(1500);
+			for(int i=0;i<20;i++)			//Get average initial direction
 			{
-				initial_yaw+=angle.z;
-				delay(50);
+//				if(gyro_ready_flag)
+//				{
+					gyro_ready_flag=0;
+					initial_yaw+=angle.z;
+					delay(100);
+//				}
+//				else
+//					continue;
 			}
-			initial_yaw=initial_yaw/10;
+			initial_yaw=initial_yaw/20;
 			PID_target=initial_yaw + increment_angle;
 			if(PID_target > 180)
 				PID_target=-360+PID_target;
 			if(PID_target <-180)
 				PID_target=360+PID_target;
-			HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
+
 
 		  for(;;)
 		  {
@@ -661,6 +670,10 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 //			  		  {
 //			  			  return 1;
 //			  		  }
+			  	  if(gyro_ready_flag==0)
+			  		  continue;
+			  	  gyro_ready_flag=0;
+			  	HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
 			  	 PID_Input = angle.z;
 			  	 Error=Angle_Diff(PID_target, PID_Input);
 			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
@@ -695,30 +708,46 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 							  Error_Total;
 			     Error_Total=Error_Total+KI*Error;
 			     PID_Error_Last = Error;
-			     if(PID_Output >= 0)
+			     if(PID_Output < 0)
 			     {
-			    	 if(PID_Output > PWM_Higest)
-			    		 PID_Output=PWM_Higest;
-			    	 if(PID_Output < PWM_Lowest)
-			    		 PID_Output=PWM_Lowest;
-			    	 //taskENTER_CRITICAL();
-			    	 PWM_SET_RIGHT ((int32_t) PID_Output);
-			    	 PWM_SET_LEFT((int32_t) (-PID_Output));
-			    	 //taskEXIT_CRITICAL();
-			     }
-			     if(PID_Output <0)
-			     {
+			    	 PID_Output-=PWM_Lowest;
 			    	 if(-PID_Output > PWM_Higest)
-			    		 PID_Output=-PWM_Higest;
-			    	 if(-PID_Output < PWM_Lowest)
-			    	 	 PID_Output=-PWM_Lowest;
-			    	 //taskENTER_CRITICAL();
+			    	 	PID_Output=-PWM_Higest;
+			     }
+
+			     else if(PID_Output > 0)
+			     {
+			    	 PID_Output+=PWM_Lowest;
+			    	 if(-PID_Output > PWM_Higest)
+			    	 	PID_Output=-PWM_Higest;
+			     }
+			     else
+			    	PID_Output=0;
+
+
+//			     if(PID_Output >= 0)
+//			     {
+//
+//			    	 if(PID_Output > PWM_Higest)
+//			    		 PID_Output=PWM_Higest;
+//			    	 if(PID_Output < PWM_Lowest)
+//			    		 PID_Output=PWM_Lowest;
+//			    	 //taskENTER_CRITICAL();
+//
+//			    	 //taskEXIT_CRITICAL();
+//			     }
+//			     if(PID_Output <0)
+//			     {
+//			    	 if(-PID_Output > PWM_Higest)
+//			    		 PID_Output=-PWM_Higest;
+//			    	 if(-PID_Output < PWM_Lowest)
+//			    	 	 PID_Output=-PWM_Lowest;
+			    	 taskENTER_CRITICAL();
 			    	 PWM_SET_RIGHT ((int32_t) PID_Output);
 			    	 PWM_SET_LEFT((int32_t)(-PID_Output));
-			    	 //taskEXIT_CRITICAL();
+			    	 taskEXIT_CRITICAL();
 			     }
 			     delay(2);
-		  }
 }
 
 Distance Ultrasonic_Feedback(void)
@@ -780,7 +809,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Line_Search;
+					next_state = GoStraight;
 					break;
 		case Line_Search:
 					if(distance_flag==0)
@@ -897,20 +926,20 @@ void StreamTask(void const * argument)
 		  	  	  	  	  //vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  break;
 	  case TurnRight:
-	  	  	  	  	  	  state= Idle;
+	  	  	  	  	  	  //state= Idle;
 	  	  	  	  	  	  Car_Stop();
 	  	  	  	  	  	  delay(50);
 	  	  	  	  	  	  state= TurnRight;
 	  	  	  	  	  	  distance_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  PID_Turning(-90,10);
+		  	  	  	  	  PID_Turning(-90,1.5);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  case GoStraight:
-		  	  	  	  	  state= Idle;
+		  	  	  	  	  //state= Idle;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  state= GoStraight;
-		  	  	  	  	  critical_distance.front=150;
+		  	  	  	  	  critical_distance.front=350;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
@@ -972,10 +1001,10 @@ void PIDCameraTask(void const * argument)
 		  		 PID_Output+=PWM_Lowest;
 		     if(PID_Output > PWM_Higest-PWM_Mid) 			PID_Output =	2000-PWM_Mid;	    // 限幅
 		     else if(PID_Output <-(PWM_Higest-PWM_Mid)) 	PID_Output = 	-(2000-PWM_Mid);
-		     //taskENTER_CRITICAL();
+		     taskENTER_CRITICAL();
 		     PWM_SET_RIGHT ((PWM_Mid + (int32_t) PID_Output));
 		     PWM_SET_LEFT  ((PWM_Mid - (int32_t) PID_Output));
-		     //taskEXIT_CRITICAL();
+		     taskEXIT_CRITICAL();
 	  }
   /* USER CODE END PIDCameraTask */
 }
@@ -994,12 +1023,7 @@ void GyroReceiveTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  if(state == Idle)
-	  		  {
-	  			  vTaskSuspend(GyroReceiveHandle);
-	  			  continue;
-	  		  }
-	  delay(10);
+	  delay(100);
 	  uint8_t AxH=0, AxL=0;
 	  int16_t Ax=0;
 
@@ -1013,9 +1037,9 @@ void GyroReceiveTask(void const * argument)
 	  int i=0;
 	  int h=0;
 	  uint8_t GyroData[21]={0};
-	  //taskENTER_CRITICAL();
-	  HAL_UART_Receive(&huart3, (uint8_t *) &GyroData, sizeof(GyroData), 0xFFFF);
-	  //taskEXIT_CRITICAL();
+	  taskENTER_CRITICAL();
+	  HAL_UART_Receive(&huart3, (uint8_t *) &GyroData, sizeof(GyroData), 300);
+	  taskEXIT_CRITICAL();
 	  while(h<14)
 	  {
 		  if(GyroData[h]==0x55)
@@ -1054,6 +1078,9 @@ void GyroReceiveTask(void const * argument)
 	  angle.x=(((float)Ax) / 32768.0 * 180.0);
 	  angle.y=(((float)Ay) / 32768.0 * 180.0);
 	  angle.z=(((float)Yaw) / 32768.0 * 180.0);
+
+	  gyro_ready_flag=1;
+
   }
   /* USER CODE END GyroReceiveTask */
 }
