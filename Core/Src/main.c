@@ -50,9 +50,9 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 470  //无反馈时电机工作占空
-#define PWM_Lowest 470
-#define PWM_Higest 1000 //for our motor, this value should less than 1300
+#define PWM_Mid 500  //无反馈时电机工作占空
+#define PWM_Lowest 300
+#define PWM_Higest 1300 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 500
 /* USER CODE END PM */
 
@@ -82,8 +82,8 @@ Distance current_distance={0,0};
 int distance_flag=0;
 
 //PID PV
-volatile uint16_t PID_Target=1000;
-volatile float Kp = 12, Ki = 0.09, Kd =8;     // PID系数，这里只用到PI控制�?????????????????????????????????
+volatile uint16_t PID_Target=0;
+volatile float Kp = 7, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -700,10 +700,10 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			    		 PID_Output=PWM_Higest;
 			    	 if(PID_Output < PWM_Lowest)
 			    		 PID_Output=PWM_Lowest;
-			    	 taskENTER_CRITICAL();
+			    	 //taskENTER_CRITICAL();
 			    	 PWM_SET_RIGHT ((int32_t) PID_Output);
 			    	 PWM_SET_LEFT((int32_t) (-PID_Output));
-			    	 taskEXIT_CRITICAL();
+			    	 //taskEXIT_CRITICAL();
 			     }
 			     if(PID_Output <0)
 			     {
@@ -711,10 +711,10 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			    		 PID_Output=-PWM_Higest;
 			    	 if(-PID_Output < PWM_Lowest)
 			    	 	 PID_Output=-PWM_Lowest;
-			    	 taskENTER_CRITICAL();
+			    	 //taskENTER_CRITICAL();
 			    	 PWM_SET_RIGHT ((int32_t) PID_Output);
 			    	 PWM_SET_LEFT((int32_t)(-PID_Output));
-			    	 taskEXIT_CRITICAL();
+			    	 //taskEXIT_CRITICAL();
 			     }
 			     delay(2);
 		  }
@@ -778,10 +778,13 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = GoStraight;
+					next_state = Line_Search;
 					break;
 		case Line_Search:
-					next_state = Line_Search;
+					if(distance_flag==0)
+						next_state = Line_Search;
+					else
+						next_state= TurnRight;
 					break;
 		case TurnRight:
 					next_state = GoStraight;
@@ -897,7 +900,7 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  state= TurnRight;
 	  	  	  	  	  	  distance_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  PID_Turning(-180,15);
+		  	  	  	  	  PID_Turning(-90,10);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  case GoStraight:
@@ -933,8 +936,7 @@ void PIDCameraTask(void const * argument)
   /* USER CODE BEGIN PIDCameraTask */
 		vTaskSuspend(PIDCameraHandle);
 		float PID_Error_Last=0;
-		float PID_Output=1000;                    // PWM输出占空
-		float PWM_Add=0;
+		float PID_Output=0;                    // PWM输出占空
 		float Error = 0, Error_Total=0;
 		int32_t PID_Input=0;
 	  /* Infinite loop */
@@ -948,8 +950,8 @@ void PIDCameraTask(void const * argument)
 		     HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 		  	 delay(10);
 		  	 //Data=0x03E8;
-		  	 PID_Input = (Camera_Data & (0x07FF));
-		  	 if (PID_Input == 0)
+		  	 PID_Input = (Camera_Data & (0x07FF))-1000;
+		  	 if (PID_Input == -1000)
 		  		 continue;
 		  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
 		  	 PID_Output = Kp * Error  +
@@ -957,12 +959,11 @@ void PIDCameraTask(void const * argument)
 		  				  Error_Total;
 		  	 Error_Total=Error_Total+Ki*Error;
 		  	 PID_Error_Last = Error;
-		     if(PID_Output > 2000) PID_Output =2000;	    // 限幅
-		     if(PID_Output <1) PID_Output = 1;
-		     PWM_Add = PID_Output - 1000;
+		    // if(PID_Output > 2000-PWM_Mid) 			PID_Output =	2000-PWM_Mid;	    // 限幅
+		     //else if(PID_Output <-(2000-PWM_Mid)) 	PID_Output = 	-(2000-PWM_Mid);
 		     taskENTER_CRITICAL();
-		     PWM_SET_RIGHT ((PWM_Mid + (int32_t)PWM_Add / 2));
-		     PWM_SET_LEFT ((PWM_Mid - (int32_t)PWM_Add / 2));
+		     PWM_SET_RIGHT ((PWM_Mid + (int32_t) PID_Output));
+		     PWM_SET_LEFT  ((PWM_Mid - (int32_t) PID_Output));
 		     taskEXIT_CRITICAL();
 	  }
   /* USER CODE END PIDCameraTask */
@@ -1001,9 +1002,9 @@ void GyroReceiveTask(void const * argument)
 	  int i=0;
 	  int h=0;
 	  uint8_t GyroData[21]={0};
-	  taskENTER_CRITICAL();
+	  //taskENTER_CRITICAL();
 	  HAL_UART_Receive(&huart3, (uint8_t *) &GyroData, sizeof(GyroData), 0xFFFF);
-	  taskEXIT_CRITICAL();
+	  //taskEXIT_CRITICAL();
 	  while(h<14)
 	  {
 		  if(GyroData[h]==0x55)
@@ -1036,9 +1037,9 @@ void GyroReceiveTask(void const * argument)
 	  Ay=((((int16_t) AyH)<<8) | AyL);
 	  Yaw=((((int16_t) YawH)<<8) | YawL);
 
-	  taskENTER_CRITICAL();
-	  HAL_UART_Transmit(&huart1, (uint8_t *) &Yaw, sizeof(Yaw), 0xFFFF);
-	  taskEXIT_CRITICAL();
+	  //taskENTER_CRITICAL();
+	  //HAL_UART_Transmit(&huart1, (uint8_t *) &Yaw, sizeof(Yaw), 0xFFFF);
+	  //taskEXIT_CRITICAL();
 	  angle.x=(((float)Ax) / 32768.0 * 180.0);
 	  angle.y=(((float)Ay) / 32768.0 * 180.0);
 	  angle.z=(((float)Yaw) / 32768.0 * 180.0);
