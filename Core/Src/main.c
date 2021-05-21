@@ -50,10 +50,10 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1000  //无反馈时电机工作占空
-#define PWM_Lowest 550
-#define PWM_Higest 1600 //for our motor, this value should less than 1300
-#define Angle_stable_cycles 6
+#define PWM_Mid 600  //无反馈时电机工作占空
+#define PWM_Lowest 400
+#define PWM_Higest 1000 //for our motor, this value should less than 1300
+#define Angle_stable_cycles 8
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -69,10 +69,13 @@ osThreadId StreamHandle;
 osThreadId PIDCameraHandle;
 osThreadId GyroReceiveHandle;
 osThreadId DistanceCheckHandle;
+osSemaphoreId CameraUARTSemHandle;
+osSemaphoreId GyroReadySemHandle;
+osSemaphoreId CriticalDistanceSemHandle;
 /* USER CODE BEGIN PV */
 State state;
 volatile uint8_t Rx_Buf[2]={0,0};
-uint8_t Rx_Buf_Sonic[3]={0,0,0};
+//uint8_t Rx_Buf_Sonic[3]={0,0,0};
 //volatile uint8_t OpenmvData[2]={0,0};
 volatile uint16_t Camera_Data=0x0000;
 Angle angle={0.0,0.0,0.0};
@@ -82,10 +85,11 @@ Distance current_distance={0,0};
 int distance_flag=0;
 int camera_ready_flag=0;
 int gyro_ready_flag=0;
+int camera_recieve_IT_flag=0;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�???????????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -157,7 +161,6 @@ int main(void)
   MX_USART3_UART_Init();
   MX_UART5_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 
 
   //HAL_UART_Receive_IT(&huart5,(uint8_t*) &Rx_Buf_Sonic,3);
@@ -166,6 +169,19 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* definition and creation of CameraUARTSem */
+  osSemaphoreDef(CameraUARTSem);
+  CameraUARTSemHandle = osSemaphoreCreate(osSemaphore(CameraUARTSem), 1);
+
+  /* definition and creation of GyroReadySem */
+  osSemaphoreDef(GyroReadySem);
+  GyroReadySemHandle = osSemaphoreCreate(osSemaphore(GyroReadySem), 1);
+
+  /* definition and creation of CriticalDistanceSem */
+  osSemaphoreDef(CriticalDistanceSem);
+  CriticalDistanceSemHandle = osSemaphoreCreate(osSemaphore(CriticalDistanceSem), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -566,8 +582,8 @@ void Car_Initial(void)
 {
 	taskENTER_CRITICAL();
 	state=Initial;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
@@ -649,9 +665,11 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			{
 //				if(gyro_ready_flag)
 //				{
-					gyro_ready_flag=0;
+					//gyro_ready_flag=0;
+					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+					//ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
 					initial_yaw+=angle.z;
-					delay(100);
+					delay(40);
 //				}
 //				else
 //					continue;
@@ -670,10 +688,12 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 //			  		  {
 //			  			  return 1;
 //			  		  }
-			  	  if(gyro_ready_flag==0)
-			  		  continue;
-			  	  gyro_ready_flag=0;
-			  	HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
+//			  	  if(gyro_ready_flag==0)
+//			  		  continue;
+//			  	  gyro_ready_flag=0;
+			  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+			  	 //ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
+
 			  	 PID_Input = angle.z;
 			  	 Error=Angle_Diff(PID_target, PID_Input);
 			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
@@ -762,7 +782,7 @@ Distance Ultrasonic_Feedback(void)
 	Data=Data | (((uint32_t) (Rx_Buf[0]))<<16);
 	Data=Data | (((uint32_t) (Rx_Buf[1]))<<8);
 	Data=Data |((uint32_t) (Rx_Buf[2]));
-	HAL_UART_Transmit(&huart1, (uint8_t *) &Data, 4, 0xFFFF);
+	//HAL_UART_Transmit(&huart1, (uint8_t *) &Data, 4, 0xFFFF);
 	distance.front=Data/1000;
 	return distance;
 }
@@ -778,11 +798,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		//HAL_UART_AbortReceive_IT(&huart1);
   		Rx_Buf[0]=0;
   		Rx_Buf[1]=0;
-  		camera_ready_flag=1;
+  		//camera_ready_flag=1;
+  		osSemaphoreRelease(CameraUARTSemHandle);
+  		if(camera_recieve_IT_flag)
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-
-
-  		//HAL_UART_Receive_IT(&huart1,Rx_Buf[++Rx_Cnt],1);
   		/*if (Rx_Cnt>20)
   			Rx_Cnt=0;*/
   	}
@@ -821,6 +840,7 @@ uint8_t State_Transition(State* current_state)
 					next_state = GoStraight;
 					break;
 		case GoStraight:
+					osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 					if(distance_flag==0)
 						next_state = GoStraight;
 					else
@@ -906,7 +926,7 @@ void StreamTask(void const * argument)
 	  //PreviousWakeTime = osKernelSysTick()
 	  //osDelayUntil(&PreviousWakeTime = osKernelSysTick(), 500);
 	  //HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
+	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 	  Same_State_Flag = State_Transition(&state);
 	  if(Same_State_Flag)
 		  continue;
@@ -928,22 +948,30 @@ void StreamTask(void const * argument)
 	  case TurnRight:
 	  	  	  	  	  	  //state= Idle;
 	  	  	  	  	  	  Car_Stop();
+	  	  	  	  	  	  vTaskSuspend(PIDCameraHandle);
+	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
+	  	  	  	  	  	  camera_recieve_IT_flag=0;
 	  	  	  	  	  	  delay(50);
 	  	  	  	  	  	  state= TurnRight;
 	  	  	  	  	  	  distance_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Turning(-90,1.5);
+		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
+		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  case GoStraight:
 		  	  	  	  	  //state= Idle;
+		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
+		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
-		  	  	  	  	  state= GoStraight;
+		  	  	  	  	  //state= GoStraight;
 		  	  	  	  	  critical_distance.front=350;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
-		  	  	  	  	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
+		  	  	  	  	  //osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+		  	  	  	  	  //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
 		  	  	  	  	  break;
 	  case Idle:
 		  	  	  	  	  Car_Stop();
@@ -971,6 +999,8 @@ void PIDCameraTask(void const * argument)
 		float PID_Output=0;                    // PWM输出占空
 		float Error = 0, Error_Total=0;
 		int32_t PID_Input=0;
+		camera_recieve_IT_flag=1;
+		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 	  /* Infinite loop */
 	  for(;;)
 	  {
@@ -979,11 +1009,12 @@ void PIDCameraTask(void const * argument)
 			  vTaskSuspend(PIDCameraHandle);
 			  continue;
 		  }
-		  	 if(camera_ready_flag==0)
-		  		 continue;
-		  	 camera_ready_flag=0;
-
-		  	 delay(10);
+//		  	 if(camera_ready_flag==0)
+//		  		 continue;
+//		  	 camera_ready_flag=0;
+		  	 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+		  	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+		  	 //delay(10);
 		  	 //Data=0x03E8;
 		  	 //PID_Input=-300;
 		  	 PID_Input = (Camera_Data & (0x07FF))-1000;
@@ -1079,7 +1110,11 @@ void GyroReceiveTask(void const * argument)
 	  angle.y=(((float)Ay) / 32768.0 * 180.0);
 	  angle.z=(((float)Yaw) / 32768.0 * 180.0);
 
-	  gyro_ready_flag=1;
+	  //gyro_ready_flag=1;
+	  //xSemaphoreGive(GyroReadySemHandle)
+	  osSemaphoreRelease(GyroReadySemHandle);
+	  //xTaskNotifyGive()
+	  //portMAX_DELAY;
 
   }
   /* USER CODE END GyroReceiveTask */
@@ -1107,6 +1142,7 @@ void DistanceCheckTask(void const * argument)
 //	  	  }
 	  Distance distance={0.0,0.0};
 	  Distance temp=Ultrasonic_Feedback();
+
 	  //Distance temp=distance;
 	  for(int i=0;i<1;i++)
 	  {
@@ -1117,6 +1153,7 @@ void DistanceCheckTask(void const * argument)
 	  if(distance.front < critical_distance.front)
 	  {
 		  distance_flag=1;
+		  osSemaphoreRelease(CriticalDistanceSemHandle);
 		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);
 	  }
 	  else
