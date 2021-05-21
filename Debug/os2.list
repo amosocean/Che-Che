@@ -2843,15 +2843,9 @@ uint8_t State_Transition(State* current_state)
  8001948:	0800196d 	.word	0x0800196d
 	{
 		case Initial:
-<<<<<<< HEAD
-					next_state = Line_Search;
- 80017b6:	2302      	movs	r3, #2
- 80017b8:	73fb      	strb	r3, [r7, #15]
-=======
 					next_state = GoStraight;
  800194c:	2304      	movs	r3, #4
  800194e:	73fb      	strb	r3, [r7, #15]
->>>>>>> betterPID
 					break;
  8001950:	e01f      	b.n	8001992 <State_Transition+0x72>
 		case Line_Search:

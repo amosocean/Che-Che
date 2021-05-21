@@ -828,11 +828,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-<<<<<<< HEAD
-					next_state = Line_Search;
-=======
 					next_state = GoStraight;
->>>>>>> betterPID
 					break;
 		case Line_Search:
 					if(distance_flag==0)
