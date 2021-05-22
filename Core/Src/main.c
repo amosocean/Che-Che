@@ -57,8 +57,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 800  //无反馈时电机工作占空
-#define PWM_Lowest 520
+#define PWM_Mid 1100  //无反馈时电机工作占空
+#define PWM_Lowest 500
 #define PWM_Higest 1300 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
@@ -739,8 +739,10 @@ void Car_Initial(void)
 
 void Car_Stop(void)
 {
+	taskENTER_CRITICAL();
 	PWM_SET_LEFT(1);
 	PWM_SET_RIGHT(1);
+	taskEXIT_CRITICAL();
 }
 
 void delay(uint32_t time_ms)
@@ -930,6 +932,8 @@ void PID_Straight(void)
 					int32_t pwm_left=0;
 					//uint8_t Flag=0; //Indicate that if verifying process begin.
 					Car_Stop();
+					if (PID_Straight_Reset_Flag)
+						return;
 					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
 					for(int i=0;i<20;i++)			//Get average initial direction
 					{
@@ -1077,11 +1081,13 @@ uint8_t State_Transition(State* current_state)
 						break;
 					default:
 						next_state = Initial;
+						break;
 					}
 					//temp_state = Mile_Adjust;
 					break;
 		default:
 					next_state = Initial;
+					break;
 	}
 	if (next_state == *current_state)
 		return 1;
@@ -1194,6 +1200,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
 		  	  	  	  	  //vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  Car_Stop();
+		  	  	  	  	  delay(1000);
 		  		  	  	  break;
 	  case GoStraight_Until_Barrier:
 		  	  	  	  	  //state= Idle;
@@ -1211,7 +1218,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_1:
 						  //pulse_incremnet=6900;//室内
 						  //pulse_incremnet=22000;//室外
-						  pulse_incremnet=900; //小正方形
+						  pulse_incremnet=600; //小正方形
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  osSemaphoreWait(MileageSemHandle, osWaitForever);
@@ -1245,6 +1252,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  default :
 		  	  	  	  	  Car_Initial();
+		  	  	  	  	  break;
 	  }
 
   }
