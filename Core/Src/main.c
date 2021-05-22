@@ -29,7 +29,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum State {Initial=1, Line_Search, TurnRight, GoStraight, Idle, Unknow} State;
+typedef enum State {Initial=1,
+					Line_Search,
+					TurnRight,
+					GoStraight_Until_Barrier,
+					Go_Mile_1,
+					Mile_Adjust,
+					Idle,
+					Unknow} State;
 typedef struct Angle
 {
 	float  x;
@@ -50,8 +57,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 600  //无反馈时电机工作占空
-#define PWM_Lowest 400
+#define PWM_Mid 800  //无反馈时电机工作占空
+#define PWM_Lowest 570
 #define PWM_Higest 1000 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 8
 /* USER CODE END PM */
@@ -75,8 +82,11 @@ osThreadId MileageHandle;
 osSemaphoreId CameraUARTSemHandle;
 osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
+osSemaphoreId MileageSemHandle;
+osSemaphoreId MileageNegSemHandle;
 /* USER CODE BEGIN PV */
 State state;
+State temp_state;
 volatile uint8_t Rx_Buf[2]={0,0};
 //uint8_t Rx_Buf_Sonic[3]={0,0,0};
 //volatile uint8_t OpenmvData[2]={0,0};
@@ -91,15 +101,15 @@ int gyro_ready_flag=0;
 int camera_recieve_IT_flag=0;
 
 //Encoder PV
-uint32_t number=0;
+int32_t mileage_IT_number=-1;
 //uint8_t direction;
-uint8_t counter;
-uint32_t number_of_pulses=0;
+int32_t number_of_pulses=0;
+int32_t critical_pulses=0;
 //Encoder PV END
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�???????????????????????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -197,6 +207,14 @@ int main(void)
   /* definition and creation of CriticalDistanceSem */
   osSemaphoreDef(CriticalDistanceSem);
   CriticalDistanceSemHandle = osSemaphoreCreate(osSemaphore(CriticalDistanceSem), 1);
+
+  /* definition and creation of MileageSem */
+  osSemaphoreDef(MileageSem);
+  MileageSemHandle = osSemaphoreCreate(osSemaphore(MileageSem), 1);
+
+  /* definition and creation of MileageNegSem */
+  osSemaphoreDef(MileageNegSem);
+  MileageNegSemHandle = osSemaphoreCreate(osSemaphore(MileageNegSem), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -318,7 +336,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 3;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1000;
+  htim2.Init.Period = 5000-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
@@ -700,10 +718,12 @@ void Car_Initial(void)
 {
 	taskENTER_CRITICAL();
 	state=Initial;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????????????????启右侧PWM
+	temp_state = Unknow;
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
+	__HAL_TIM_SET_COUNTER(&htim2,500);
 	HAL_TIM_Base_Start_IT(&htim2);
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
@@ -948,7 +968,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = GoStraight;
+					next_state = Go_Mile_1;
 					break;
 		case Line_Search:
 					if(distance_flag==0)
@@ -957,14 +977,35 @@ uint8_t State_Transition(State* current_state)
 						next_state= TurnRight;
 					break;
 		case TurnRight:
-					next_state = GoStraight;
+					next_state = Go_Mile_1;
 					break;
-		case GoStraight:
-//					osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
-//					if(distance_flag==0)
-						next_state = GoStraight;
-//					else
-//						next_state = TurnRight;
+		case GoStraight_Until_Barrier:
+					osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+					if(distance_flag==0)
+						next_state = GoStraight_Until_Barrier;
+					else
+						next_state = TurnRight;
+
+					break;
+		case Go_Mile_1:
+					if(*current_state == Mile_Adjust)
+						next_state = TurnRight;
+					else
+						{
+						temp_state = *current_state;
+						next_state = Mile_Adjust;
+						}
+					break;
+		case Mile_Adjust:
+					switch (temp_state)
+					{
+					case Go_Mile_1:
+						next_state = TurnRight;
+						break;
+					default:
+						next_state = Initial;
+					}
+					//temp_state = Mile_Adjust;
 					break;
 		default:
 					next_state = Initial;
@@ -1035,6 +1076,7 @@ void StreamTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
 	uint8_t Same_State_Flag=0;
+	uint32_t pulse_incremnet=0;
 	Car_Initial();
 	delay(1000);
   /* Infinite loop */
@@ -1080,7 +1122,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
-	  case GoStraight:
+	  case GoStraight_Until_Barrier:
 		  	  	  	  	  //state= Idle;
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
@@ -1094,8 +1136,28 @@ void StreamTask(void const * argument)
 		  	  	  	  	  //osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	  	  //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
 		  	  	  	  	  break;
+	  case Go_Mile_1:
+						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+		  	  	  	  	  pulse_incremnet=2300;
+		  	  	  	  	  critical_pulses=pulse_incremnet+number_of_pulses;
+		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
+		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
+		  	  	  	  	  vTaskResume(MileageHandle);
+		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
+		  	  	  	      PWM_SET_RIGHT(PWM_Mid);
+		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+		  	  	  		  Car_Stop();
+		  	  	  	  	  break;
+	  case Mile_Adjust:
+		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
+		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest);
+		  	  	  		  PWM_SET_RIGHT(-PWM_Lowest);
+		  	  	  		  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
+		  	  	  		  Car_Stop();
+		  	  	  	  	  break;
 	  case Idle:
 		  	  	  	  	  Car_Stop();
+		  	  	  	  	  break;
 	  default :
 		  	  	  	  	  Car_Initial();
 	  }
@@ -1296,13 +1358,22 @@ void DistanceCheckTask(void const * argument)
 void MileageTask(void const * argument)
 {
   /* USER CODE BEGIN MileageTask */
+	//uint8_t mileage_counter;
+	vTaskSuspend(MileageHandle);
   /* Infinite loop */
   for(;;)
   {
-	  counter=__HAL_TIM_GET_COUNTER(&htim2);
-	  number_of_pulses=10000*(number-1)+counter;
+	  taskENTER_CRITICAL();
+	  //mileage_counter=__HAL_TIM_GET_COUNTER(&htim2);
+	  //number_of_pulses=1000*(mileage_IT_number-1)+mileage_counter;
+	  number_of_pulses=5000*mileage_IT_number+__HAL_TIM_GET_COUNTER(&htim2);
+	  taskEXIT_CRITICAL();
 	  //HAL_UART_Transmit(&huart1, &number_of_pulses, sizeof(number_of_pulses), 1000);
-	  delay(50);
+	  if (number_of_pulses>critical_pulses)
+		  osSemaphoreRelease(MileageSemHandle);
+	  else
+		  osSemaphoreRelease(MileageNegSemHandle);
+	  delay(5);
 	  //HAL_Delay(1000);
 	  //osDelay(1);
   }
@@ -1328,8 +1399,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   else if(htim->Instance==TIM2)
   	{
-  		number++;
-  		counter=0;
+  		mileage_IT_number++;
+  		//mileage_counter=0;
   		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   		//HAL_UART_Transmit(&huart1, (uint8_t*)&number, sizeof(number), 1000);
   		// __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
