@@ -58,9 +58,9 @@ typedef struct Distance
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define PWM_Mid 800  //无反馈时电机工作占空
-#define PWM_Lowest 570
-#define PWM_Higest 1000 //for our motor, this value should less than 1300
-#define Angle_stable_cycles 8
+#define PWM_Lowest 520
+#define PWM_Higest 1300 //for our motor, this value should less than 1300
+#define Angle_stable_cycles 3
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -79,6 +79,7 @@ osThreadId PIDCameraHandle;
 osThreadId GyroReceiveHandle;
 osThreadId DistanceCheckHandle;
 osThreadId MileageHandle;
+osThreadId GoStraightHandle;
 osSemaphoreId CameraUARTSemHandle;
 osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
@@ -105,11 +106,12 @@ int32_t mileage_IT_number=-1;
 //uint8_t direction;
 int32_t number_of_pulses=0;
 int32_t critical_pulses=0;
+int PID_Straight_Reset_Flag=1;
 //Encoder PV END
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�???????????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�??????????????????????????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -130,6 +132,7 @@ void PIDCameraTask(void const * argument);
 void GyroReceiveTask(void const * argument);
 void DistanceCheckTask(void const * argument);
 void MileageTask(void const * argument);
+void GoStraightTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void Car_Initial(void);
@@ -140,6 +143,7 @@ void PWM_SET_RIGHT(int32_t duty);
 float Angle_Diff(float target, float input);
 //int Angle_Stable_Check(float Error, float Accept_Error, int wait_cycles);
 int PID_Turning(float increment_angle,float Accept_Error);
+void PID_Straight(void);
 Distance Ultrasonic_Feedback(void);
 void delay(uint32_t time_ms);
 /* USER CODE END PFP */
@@ -248,6 +252,10 @@ int main(void)
   /* definition and creation of Mileage */
   osThreadDef(Mileage, MileageTask, osPriorityNormal, 0, 128);
   MileageHandle = osThreadCreate(osThread(Mileage), NULL);
+
+  /* definition and creation of GoStraight */
+  osThreadDef(GoStraight, GoStraightTask, osPriorityNormal, 0, 128);
+  GoStraightHandle = osThreadCreate(osThread(GoStraight), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -719,8 +727,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -910,6 +918,71 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			     delay(2);
 }
 
+void PID_Straight(void)
+{
+					float PID_target=0;
+					float PID_Error_Last=0;
+					float initial_yaw=0;
+					float PID_Output=0,PID_Input=0;;
+					float Error = 0, Error_Total=0;
+					float KP=30, KI=0.2, KD=5;
+					int32_t pwm_right=0;
+					int32_t pwm_left=0;
+					//uint8_t Flag=0; //Indicate that if verifying process begin.
+					Car_Stop();
+					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+					for(int i=0;i<20;i++)			//Get average initial direction
+					{
+							osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+							initial_yaw+=angle.z;
+							delay(10);
+					}
+					initial_yaw=initial_yaw/20;
+					PID_target=initial_yaw;
+				  for(;;)
+				  {
+					  	 if (PID_Straight_Reset_Flag)
+					  		 return;
+		  	  	  	  	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green
+					  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+					  	 PID_Input = angle.z;
+					  	 Error=Angle_Diff(PID_target, PID_Input);
+					     PID_Output = KP * Error  +
+					 				  KD * (Error - PID_Error_Last ) +
+									  Error_Total;
+					     Error_Total=Error_Total+KI*Error;
+					     PID_Error_Last = Error;
+	//				     if(PID_Output < 0)
+	//				     {
+	//				    	 PID_Output-=PWM_Lowest;
+	//				    	 if(-PID_Output > PWM_Higest)
+	//				    	 	PID_Output=-PWM_Higest;
+	//				     }
+	//
+	//				     else if(PID_Output > 0)
+	//				     {
+	//				    	 PID_Output+=PWM_Lowest;
+	//				    	 if(-PID_Output > PWM_Higest)
+	//				    	 	PID_Output=-PWM_Higest;
+	//				     }
+	//				     else
+	//				    	PID_Output=0;
+
+					     pwm_right=	PWM_Mid+	(int32_t) 	PID_Output;
+					     pwm_left=	PWM_Mid-	(int32_t)  	PID_Output;
+					     pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
+					     pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
+					     pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
+					     pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
+					     if (PID_Straight_Reset_Flag)
+					     	return;
+					     taskENTER_CRITICAL();
+					     PWM_SET_RIGHT (pwm_right);
+					     PWM_SET_LEFT(pwm_left);
+					     taskEXIT_CRITICAL();
+					     }
+}
+
 Distance Ultrasonic_Feedback(void)
 {
 	uint8_t info=0xA0;
@@ -980,7 +1053,7 @@ uint8_t State_Transition(State* current_state)
 					next_state = Go_Mile_1;
 					break;
 		case GoStraight_Until_Barrier:
-					osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+					//osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 					if(distance_flag==0)
 						next_state = GoStraight_Until_Barrier;
 					else
@@ -1117,9 +1190,9 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  state= TurnRight;
 	  	  	  	  	  	  distance_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  PID_Turning(-90,1.5);
+		  	  	  	  	  PID_Turning(-90,2);
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
-		  	  	  	  	  vTaskResume(DistanceCheckHandle);
+		  	  	  	  	  //vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  case GoStraight_Until_Barrier:
@@ -1133,27 +1206,39 @@ void StreamTask(void const * argument)
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
-		  	  	  	  	  //osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
-		  	  	  	  	  //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);
+		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	  	  break;
 	  case Go_Mile_1:
+						  //pulse_incremnet=6900;//室内
+						  //pulse_incremnet=22000;//室外
+						  pulse_incremnet=900; //小正方形
+						  critical_pulses=0;
+						  vTaskResume(MileageHandle);
 						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	  	  pulse_incremnet=2300;
-		  	  	  	  	  critical_pulses=pulse_incremnet+number_of_pulses;
+						  critical_pulses=pulse_incremnet+number_of_pulses;
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
-		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
-		  	  	  	  	  vTaskResume(MileageHandle);
-		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
-		  	  	  	      PWM_SET_RIGHT(PWM_Mid);
+		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+//		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
+//		  	  	  	      PWM_SET_RIGHT(PWM_Mid);
+		  	  	  	  	  PID_Straight_Reset_Flag=1;
+		  	  	  	  	  vTaskResume(GoStraightHandle);
+		  	  	  	  	  delay(200);
+		  	  	  	  	  PID_Straight_Reset_Flag=0;
 		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+		  	  	  	      PID_Straight_Reset_Flag=1;
+		  	  	  	      vTaskSuspend(GoStraightHandle);
 		  	  	  		  Car_Stop();
+		  	  	  		  vTaskSuspend(GyroReceiveHandle);
+		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Mile_Adjust:
+		  	  	  	  	  vTaskResume(MileageHandle);
 		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
-		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest);
-		  	  	  		  PWM_SET_RIGHT(-PWM_Lowest);
+		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest-80);
+		  	  	  		  PWM_SET_RIGHT(-PWM_Lowest-80);
 		  	  	  		  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
 		  	  	  		  Car_Stop();
+		  	  	  		  vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Idle:
 		  	  	  	  	  Car_Stop();
@@ -1378,6 +1463,28 @@ void MileageTask(void const * argument)
 	  //osDelay(1);
   }
   /* USER CODE END MileageTask */
+}
+
+/* USER CODE BEGIN Header_GoStraightTask */
+/**
+* @brief Function implementing the GoStraight thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_GoStraightTask */
+void GoStraightTask(void const * argument)
+{
+  /* USER CODE BEGIN GoStraightTask */
+	vTaskSuspend(GoStraightHandle);
+  /* Infinite loop */
+  for(;;)
+  {
+	if (PID_Straight_Reset_Flag)
+		continue;
+	PID_Straight();
+    delay(100);
+  }
+  /* USER CODE END GoStraightTask */
 }
 
  /**
