@@ -57,8 +57,10 @@ typedef struct Distance
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
@@ -69,6 +71,7 @@ osThreadId StreamHandle;
 osThreadId PIDCameraHandle;
 osThreadId GyroReceiveHandle;
 osThreadId DistanceCheckHandle;
+osThreadId MileageHandle;
 osSemaphoreId CameraUARTSemHandle;
 osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
@@ -87,9 +90,16 @@ int camera_ready_flag=0;
 int gyro_ready_flag=0;
 int camera_recieve_IT_flag=0;
 
+//Encoder PV
+uint32_t number=0;
+//uint8_t direction;
+uint8_t counter;
+uint32_t number_of_pulses=0;
+//Encoder PV END
+
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�???????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -103,10 +113,13 @@ static void MX_TIM4_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_UART5_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM8_Init(void);
 void StreamTask(void const * argument);
 void PIDCameraTask(void const * argument);
 void GyroReceiveTask(void const * argument);
 void DistanceCheckTask(void const * argument);
+void MileageTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void Car_Initial(void);
@@ -160,6 +173,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_UART5_Init();
+  MX_TIM2_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -211,6 +226,10 @@ int main(void)
   /* definition and creation of DistanceCheck */
   osThreadDef(DistanceCheck, DistanceCheckTask, osPriorityNormal, 0, 128);
   DistanceCheckHandle = osThreadCreate(osThread(DistanceCheck), NULL);
+
+  /* definition and creation of Mileage */
+  osThreadDef(Mileage, MileageTask, osPriorityNormal, 0, 128);
+  MileageHandle = osThreadCreate(osThread(Mileage), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -276,6 +295,55 @@ void SystemClock_Config(void)
   /** Enables the Clock Security System
   */
   HAL_RCC_EnableCSS();
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 3;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 1000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 2;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 2;
+  if (HAL_TIM_Encoder_Init(&htim2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
 }
 
 /**
@@ -393,6 +461,56 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
+
+}
+
+/**
+  * @brief TIM8 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM8_Init(void)
+{
+
+  /* USER CODE BEGIN TIM8_Init 0 */
+
+  /* USER CODE END TIM8_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM8_Init 1 */
+
+  /* USER CODE END TIM8_Init 1 */
+  htim8.Instance = TIM8;
+  htim8.Init.Prescaler = 3;
+  htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim8.Init.Period = 150;
+  htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim8.Init.RepetitionCounter = 0;
+  htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim8, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM8_Init 2 */
+
+  /* USER CODE END TIM8_Init 2 */
 
 }
 
@@ -582,9 +700,11 @@ void Car_Initial(void)
 {
 	taskENTER_CRITICAL();
 	state=Initial;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
+	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
+	HAL_TIM_Base_Start_IT(&htim2);
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
 }
@@ -840,11 +960,11 @@ uint8_t State_Transition(State* current_state)
 					next_state = GoStraight;
 					break;
 		case GoStraight:
-					osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
-					if(distance_flag==0)
+//					osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+//					if(distance_flag==0)
 						next_state = GoStraight;
-					else
-						next_state = TurnRight;
+//					else
+//						next_state = TurnRight;
 					break;
 		default:
 					next_state = Initial;
@@ -926,7 +1046,7 @@ void StreamTask(void const * argument)
 	  //PreviousWakeTime = osKernelSysTick()
 	  //osDelayUntil(&PreviousWakeTime = osKernelSysTick(), 500);
 	  //HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+
 	  Same_State_Flag = State_Transition(&state);
 	  if(Same_State_Flag)
 		  continue;
@@ -963,6 +1083,7 @@ void StreamTask(void const * argument)
 	  case GoStraight:
 		  	  	  	  	  //state= Idle;
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
+		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  //state= GoStraight;
@@ -1165,6 +1286,29 @@ void DistanceCheckTask(void const * argument)
   /* USER CODE END DistanceCheckTask */
 }
 
+/* USER CODE BEGIN Header_MileageTask */
+/**
+* @brief Function implementing the Mileage thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_MileageTask */
+void MileageTask(void const * argument)
+{
+  /* USER CODE BEGIN MileageTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	  counter=__HAL_TIM_GET_COUNTER(&htim2);
+	  number_of_pulses=10000*(number-1)+counter;
+	  //HAL_UART_Transmit(&huart1, &number_of_pulses, sizeof(number_of_pulses), 1000);
+	  delay(50);
+	  //HAL_Delay(1000);
+	  //osDelay(1);
+  }
+  /* USER CODE END MileageTask */
+}
+
  /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM1 interrupt took place, inside
@@ -1182,7 +1326,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  else if(htim->Instance==TIM2)
+  	{
+  		number++;
+  		counter=0;
+  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+  		//HAL_UART_Transmit(&huart1, (uint8_t*)&number, sizeof(number), 1000);
+  		// __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
+  	}
   /* USER CODE END Callback 1 */
 }
 
