@@ -57,7 +57,7 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1100  //无反馈时电机工作占空
+#define PWM_Mid 800  //无反馈时电机工作占空
 #define PWM_Lowest 500
 #define PWM_Higest 1300 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
@@ -926,8 +926,8 @@ void PID_Straight(void)
 					float PID_Error_Last=0;
 					float initial_yaw=0;
 					float PID_Output=0,PID_Input=0;;
-					float Error = 0, Error_Total=0;
-					float KP=30, KI=0.2, KD=5;
+					float Error = 0, Error_Total=0,Error_Total_Total=0;
+					float KP=10, KI=3, KD=5, KI2=0.013;
 					int32_t pwm_right=0;
 					int32_t pwm_left=0;
 					//uint8_t Flag=0; //Indicate that if verifying process begin.
@@ -955,6 +955,7 @@ void PID_Straight(void)
 					 				  KD * (Error - PID_Error_Last ) +
 									  Error_Total;
 					     Error_Total=Error_Total+KI*Error;
+					     Error_Total_Total= Error_Total_Total+KI2*Error_Total;
 					     PID_Error_Last = Error;
 	//				     if(PID_Output < 0)
 	//				     {
@@ -1217,8 +1218,8 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case Go_Mile_1:
 						  //pulse_incremnet=6900;//室内
-						  //pulse_incremnet=22000;//室外
-						  pulse_incremnet=600; //小正方形
+						  pulse_incremnet=33000;//室外
+						  //pulse_incremnet=600; //小正方形
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  osSemaphoreWait(MileageSemHandle, osWaitForever);
