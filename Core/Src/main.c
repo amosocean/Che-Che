@@ -33,7 +33,7 @@ typedef enum State {Initial=1,
 					Line_Search,
 					TurnRight,
 					GoStraight_Until_Barrier,
-					Go_Mile_1,
+					Go_Mile_1,Go_Line_Follow,
 					Mile_Adjust,
 					Idle,
 					Unknow} State;
@@ -75,11 +75,11 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 osThreadId StreamHandle;
-osThreadId PIDCameraHandle;
 osThreadId GyroReceiveHandle;
 osThreadId DistanceCheckHandle;
 osThreadId MileageHandle;
 osThreadId GoStraightHandle;
+osThreadId LineSearchHandle;
 osSemaphoreId CameraUARTSemHandle;
 osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
@@ -110,8 +110,7 @@ int PID_Straight_Reset_Flag=1;
 //Encoder PV END
 
 //PID PV
-volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�??????????????????????????????????????????????????????
+
 //PID PV END
 
 /* USER CODE END PV */
@@ -128,11 +127,11 @@ static void MX_UART5_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM8_Init(void);
 void StreamTask(void const * argument);
-void PIDCameraTask(void const * argument);
 void GyroReceiveTask(void const * argument);
 void DistanceCheckTask(void const * argument);
 void MileageTask(void const * argument);
 void GoStraightTask(void const * argument);
+void LineSearchTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void Car_Initial(void);
@@ -144,6 +143,7 @@ float Angle_Diff(float target, float input);
 //int Angle_Stable_Check(float Error, float Accept_Error, int wait_cycles);
 int PID_Turning(float increment_angle,float Accept_Error);
 void PID_Straight(void);
+float PID_Line_Follow(float Accept_Error);
 Distance Ultrasonic_Feedback(void);
 void delay(uint32_t time_ms);
 /* USER CODE END PFP */
@@ -237,10 +237,6 @@ int main(void)
   osThreadDef(Stream, StreamTask, osPriorityNormal, 0, 128);
   StreamHandle = osThreadCreate(osThread(Stream), NULL);
 
-  /* definition and creation of PIDCamera */
-  osThreadDef(PIDCamera, PIDCameraTask, osPriorityNormal, 0, 128);
-  PIDCameraHandle = osThreadCreate(osThread(PIDCamera), NULL);
-
   /* definition and creation of GyroReceive */
   osThreadDef(GyroReceive, GyroReceiveTask, osPriorityNormal, 0, 128);
   GyroReceiveHandle = osThreadCreate(osThread(GyroReceive), NULL);
@@ -256,6 +252,10 @@ int main(void)
   /* definition and creation of GoStraight */
   osThreadDef(GoStraight, GoStraightTask, osPriorityNormal, 0, 128);
   GoStraightHandle = osThreadCreate(osThread(GoStraight), NULL);
+
+  /* definition and creation of LineSearch */
+  osThreadDef(LineSearch, LineSearchTask, osPriorityIdle, 0, 128);
+  LineSearchHandle = osThreadCreate(osThread(LineSearch), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -727,8 +727,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -988,6 +988,78 @@ void PID_Straight(void)
 					     }
 }
 
+float PID_Line_Follow(float Accept_Error)
+{
+			volatile uint16_t PID_Target=0;
+		    volatile float Kp = 2, Ki = 0, Kd =0;     // PID系数
+			float PID_Error_Last=0;
+			float PID_Output=0;                    // PWM输出占空
+			float Error = 0, Error_Total=0,First_Error=0;
+			int32_t PID_Input=0;
+			int in_place_count=0;
+			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+						  	 for(int i = 0;i<3;i++)
+						  	 {
+						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
+						  		 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+						  	 }
+						  	 PID_Input/=3;
+			First_Error= PID_Target - PID_Input;
+			Error=PID_Target - PID_Input;
+		  /* Infinite loop */
+//		  for(;;)
+//		  {
+//			  	 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+//			  	 PID_Input = (Camera_Data & (0x07FF))-1000;
+			  	 //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+			  	 //delay(10);
+			  	 //Data=0x03E8;
+			  	 //PID_Input=-300;
+			  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
+//			  	 if (Error < Accept_Error)
+//			  		in_place_count++;
+//			  	 else in_place_count=0;
+//			  	 if (in_place_count > 3)
+//			  		 return First_Error>=0?First_Error:(-First_Error);
+			  	 PID_Output = Kp * Error  +
+			  				  Kd * (Error - PID_Error_Last ) +
+			  				  Error_Total;
+			  	 Error_Total=Error_Total+Ki*Error;
+			  	 PID_Error_Last = Error;
+//			  	 if(PID_Output < 0)
+//			  		 PID_Output-=PWM_Lowest;
+//			  	 else
+//			  		 PID_Output+=PWM_Lowest;
+			     if(PID_Output > PWM_Higest) 			PID_Output =	PWM_Higest;	    // 限幅
+			     else if(PID_Output <-(PWM_Higest)) 	PID_Output = 	-PWM_Higest;
+
+
+			     //taskENTER_CRITICAL();
+//			     PWM_SET_RIGHT ((int32_t) PID_Output);
+//			     PWM_SET_LEFT  ((int32_t) -PID_Output);
+			     if(PID_Output>0)
+			     {
+			    	 taskENTER_CRITICAL();
+			    	 PWM_SET_RIGHT (PWM_Lowest);
+			    	 PWM_SET_LEFT  (-PWM_Lowest);
+			    	 taskEXIT_CRITICAL();
+			     }
+			     else
+			     {
+			    	 taskENTER_CRITICAL();
+			    	 PWM_SET_RIGHT (-PWM_Lowest);
+			    	 PWM_SET_LEFT  (PWM_Lowest);
+			    	 taskEXIT_CRITICAL();
+			     }
+			     //taskEXIT_CRITICAL();
+			     PID_Output=PID_Output>0?PID_Output:-PID_Output;
+			     delay((uint32_t) PID_Output);
+			     HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+//		  }
+			     return First_Error;
+}
+
 Distance Ultrasonic_Feedback(void)
 {
 	uint8_t info=0xA0;
@@ -1018,6 +1090,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		Rx_Buf[1]=0;
   		//camera_ready_flag=1;
   		osSemaphoreRelease(CameraUARTSemHandle);
+  		//HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   		if(camera_recieve_IT_flag)
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   		/*if (Rx_Cnt>20)
@@ -1046,7 +1119,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Go_Mile_1;
+					next_state = Line_Search;
 					break;
 		case Line_Search:
 					if(distance_flag==0)
@@ -1054,6 +1127,9 @@ uint8_t State_Transition(State* current_state)
 					else
 						next_state= TurnRight;
 					break;
+		case Go_Line_Follow:
+						next_state = Line_Search;
+				  	 break;
 		case TurnRight:
 					next_state = Go_Mile_1;
 					break;
@@ -1078,7 +1154,7 @@ uint8_t State_Transition(State* current_state)
 					switch (temp_state)
 					{
 					case Go_Mile_1:
-						next_state = TurnRight;
+						next_state = Line_Search;
 						break;
 					default:
 						next_state = Initial;
@@ -1157,6 +1233,7 @@ void StreamTask(void const * argument)
   /* USER CODE BEGIN 5 */
 	uint8_t Same_State_Flag=0;
 	uint32_t pulse_incremnet=0;
+	float last_error=0;
 	Car_Initial();
 	delay(1000);
   /* Infinite loop */
@@ -1184,13 +1261,16 @@ void StreamTask(void const * argument)
 		  	  	  	  	  state= Idle;
 		  		  	  	  delay(500);
 		  		  	  	  state= Line_Search;
-		  	  	  	  	  vTaskResume(PIDCameraHandle);
+		  		  	  	  camera_recieve_IT_flag=1;
+		  		  	  	  vTaskResume(LineSearchHandle);
+		  	  	  	  	  //camera_recieve_IT_flag=0;
 		  	  	  	  	  //vTaskResume(GyroReceiveHandle);
+		  	  	  	  	  break;
+	  case Go_Line_Follow:
 		  	  	  	  	  break;
 	  case TurnRight:
 	  	  	  	  	  	  //state= Idle;
 	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  vTaskSuspend(PIDCameraHandle);
 	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
 	  	  	  	  	  	  camera_recieve_IT_flag=0;
 	  	  	  	  	  	  delay(50);
@@ -1205,7 +1285,6 @@ void StreamTask(void const * argument)
 		  		  	  	  break;
 	  case GoStraight_Until_Barrier:
 		  	  	  	  	  //state= Idle;
-		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
@@ -1217,27 +1296,26 @@ void StreamTask(void const * argument)
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	  	  break;
 	  case Go_Mile_1:
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=33000;//室外
-						  //pulse_incremnet=600; //小正方形
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-//		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
-//		  	  	  	      PWM_SET_RIGHT(PWM_Mid);
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  vTaskSuspend(GyroReceiveHandle);
-		  	  	  		  //vTaskSuspend(MileageHandle);
+//						  //pulse_incremnet=6900;//室内
+//						  pulse_incremnet=33000;//室外
+//						  //pulse_incremnet=600; //小正方形
+//						  critical_pulses=0;
+//						  vTaskResume(MileageHandle);
+//						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+//						  critical_pulses=pulse_incremnet+number_of_pulses;
+//		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+////		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
+////		  	  	  	      PWM_SET_RIGHT(PWM_Mid);
+//		  	  	  	  	  PID_Straight_Reset_Flag=1;
+//		  	  	  	  	  vTaskResume(GoStraightHandle);
+//		  	  	  	  	  delay(200);
+//		  	  	  	  	  PID_Straight_Reset_Flag=0;
+//		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+//		  	  	  	      PID_Straight_Reset_Flag=1;
+//		  	  	  	      vTaskSuspend(GoStraightHandle);
+//		  	  	  		  Car_Stop();
+//		  	  	  		  vTaskSuspend(GyroReceiveHandle);
+//		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Mile_Adjust:
 		  	  	  	  	  vTaskResume(MileageHandle);
@@ -1259,62 +1337,6 @@ void StreamTask(void const * argument)
   }
 
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_PIDCameraTask */
-/**
-* @brief Function implementing the PIDCamera thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_PIDCameraTask */
-void PIDCameraTask(void const * argument)
-{
-  /* USER CODE BEGIN PIDCameraTask */
-		vTaskSuspend(PIDCameraHandle);
-		float PID_Error_Last=0;
-		float PID_Output=0;                    // PWM输出占空
-		float Error = 0, Error_Total=0;
-		int32_t PID_Input=0;
-		camera_recieve_IT_flag=1;
-		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-	  /* Infinite loop */
-	  for(;;)
-	  {
-		  if(state == Idle)
-		  {
-			  vTaskSuspend(PIDCameraHandle);
-			  continue;
-		  }
-//		  	 if(camera_ready_flag==0)
-//		  		 continue;
-//		  	 camera_ready_flag=0;
-		  	 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
-		  	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
-		  	 //delay(10);
-		  	 //Data=0x03E8;
-		  	 //PID_Input=-300;
-		  	 PID_Input = (Camera_Data & (0x07FF))-1000;
-		  	 if (PID_Input == -1000)
-		  		 continue;
-		  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
-		  	 PID_Output = Kp * Error  +
-		  				  Kd * (Error - PID_Error_Last ) +
-		  				  Error_Total;
-		  	 Error_Total=Error_Total+Ki*Error;
-		  	 PID_Error_Last = Error;
-		  	 if(PID_Output < 0)
-		  		 PID_Output-=PWM_Lowest;
-		  	 else
-		  		 PID_Output+=PWM_Lowest;
-		     if(PID_Output > PWM_Higest-PWM_Mid) 			PID_Output =	2000-PWM_Mid;	    // 限幅
-		     else if(PID_Output <-(PWM_Higest-PWM_Mid)) 	PID_Output = 	-(2000-PWM_Mid);
-		     taskENTER_CRITICAL();
-		     PWM_SET_RIGHT ((PWM_Mid + (int32_t) PID_Output));
-		     PWM_SET_LEFT  ((PWM_Mid - (int32_t) PID_Output));
-		     taskEXIT_CRITICAL();
-	  }
-  /* USER CODE END PIDCameraTask */
 }
 
 /* USER CODE BEGIN Header_GyroReceiveTask */
@@ -1494,6 +1516,42 @@ void GoStraightTask(void const * argument)
     delay(100);
   }
   /* USER CODE END GoStraightTask */
+}
+
+/* USER CODE BEGIN Header_LineSearchTask */
+/**
+* @brief Function implementing the LineSearch thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_LineSearchTask */
+void LineSearchTask(void const * argument)
+{
+  /* USER CODE BEGIN LineSearchTask */
+	int32_t pulse_incremnet=1000;
+	vTaskSuspend(LineSearchHandle);
+	vTaskResume(MileageHandle);
+	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+  /* Infinite loop */
+  for(;;)
+  {
+	  						  //pulse_incremnet=6900;//室内
+	  						  //pulse_incremnet=33000;//室外
+	  						  //pulse_incremnet=600; //小正方形
+	  						  critical_pulses=0;
+	  						  vTaskResume(MileageHandle);
+	  						  critical_pulses=pulse_incremnet+number_of_pulses;
+	  						  osSemaphoreRelease(MileageSemHandle);
+	  						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+	  						  taskENTER_CRITICAL();
+	  					      PWM_SET_LEFT(PWM_Mid);
+	  						  PWM_SET_RIGHT(PWM_Mid);
+	  						  taskEXIT_CRITICAL();
+	  		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+	  		  	  	  		  Car_Stop();
+	  		  	  	  		  pulse_incremnet=600-PID_Line_Follow(10);
+  }
+  /* USER CODE END LineSearchTask */
 }
 
  /**
