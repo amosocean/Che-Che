@@ -177,30 +177,6 @@
                         					
                     </folderInfo>
                     					
-                    <fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.990677032.1159098485" name="main.c" rcbsApplicability="disable" resourcePath="Core/Src/main.c" toolsToInvoke="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.208072584.1928871601">
-                        						
-                        <tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.208072584.1928871601" name="MCU GCC Compiler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.208072584">
-                            							
-                            <option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.optimization.level.831617672" name="Optimization level" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.optimization.level" useByScannerDiscovery="false" value="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.optimization.level.value.o0" valueType="enumerated"/>
-                            							
-                            <inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.596259787" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
-                            						
-                        </tool>
-                        						
-                        <tool customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.1418360228" name="Resource Custom Build Step">
-                            							
-                            <inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.1258652042" name="Resource Custom Build Step Input Type">
-                                								
-                                <additionalInput kind="additionalinputdependency" paths=""/>
-                                							
-                            </inputType>
-                            							
-                            <outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.1173325690" name="Resource Custom Build Step Output Type"/>
-                            						
-                        </tool>
-                        					
-                    </fileInfo>
-                    					
                     <sourceEntries>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
