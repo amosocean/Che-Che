@@ -873,10 +873,10 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			  			t=0;
 			  		}
 			  	 }
+			  	 Error_Total=Error_Total+KI*Error;
 			     PID_Output = KP * Error  +
 			 				  KD * (Error - PID_Error_Last ) +
 							  Error_Total;
-			     Error_Total=Error_Total+KI*Error;
 			     PID_Error_Last = Error;
 			     if(PID_Output < 0)
 			     {
@@ -893,8 +893,6 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			     }
 			     else
 			    	PID_Output=0;
-
-
 //			     if(PID_Output >= 0)
 //			     {
 //
@@ -951,11 +949,11 @@ void PID_Straight(void)
 					  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
 					  	 PID_Input = angle.z;
 					  	 Error=Angle_Diff(PID_target, PID_Input);
+					  	 Error_Total=Error_Total+KI*Error;
+					     Error_Total_Total= Error_Total_Total+KI2*Error_Total;
 					     PID_Output = KP * Error  +
 					 				  KD * (Error - PID_Error_Last ) +
 									  Error_Total;
-					     Error_Total=Error_Total+KI*Error;
-					     Error_Total_Total= Error_Total_Total+KI2*Error_Total;
 					     PID_Error_Last = Error;
 	//				     if(PID_Output < 0)
 	//				     {
@@ -990,6 +988,7 @@ void PID_Straight(void)
 
 float PID_Line_Follow(float Accept_Error)
 {
+#define MAX_TIME 1000
 			volatile uint16_t PID_Target=0;
 		    volatile float Kp = 2, Ki = 0, Kd =0;     // PID系数
 			float PID_Error_Last=0;
@@ -1022,34 +1021,32 @@ float PID_Line_Follow(float Accept_Error)
 //			  	 else in_place_count=0;
 //			  	 if (in_place_count > 3)
 //			  		 return First_Error>=0?First_Error:(-First_Error);
+			  	 Error_Total=Error_Total+Ki*Error;
 			  	 PID_Output = Kp * Error  +
 			  				  Kd * (Error - PID_Error_Last ) +
 			  				  Error_Total;
-			  	 Error_Total=Error_Total+Ki*Error;
 			  	 PID_Error_Last = Error;
 //			  	 if(PID_Output < 0)
 //			  		 PID_Output-=PWM_Lowest;
 //			  	 else
 //			  		 PID_Output+=PWM_Lowest;
-			     if(PID_Output > PWM_Higest) 			PID_Output =	PWM_Higest;	    // 限幅
-			     else if(PID_Output <-(PWM_Higest)) 	PID_Output = 	-PWM_Higest;
-
-
+			     if(PID_Output > MAX_TIME) 			PID_Output =	MAX_TIME;	    // 限幅
+			     else if(PID_Output <-(MAX_TIME)) 	PID_Output = 	-MAX_TIME;
 			     //taskENTER_CRITICAL();
 //			     PWM_SET_RIGHT ((int32_t) PID_Output);
 //			     PWM_SET_LEFT  ((int32_t) -PID_Output);
 			     if(PID_Output>0)
 			     {
 			    	 taskENTER_CRITICAL();
-			    	 PWM_SET_RIGHT (PWM_Lowest);
-			    	 PWM_SET_LEFT  (-PWM_Lowest);
+			    	 PWM_SET_RIGHT (PWM_Lowest+100);
+			    	 PWM_SET_LEFT  (-PWM_Lowest-100);
 			    	 taskEXIT_CRITICAL();
 			     }
 			     else
 			     {
 			    	 taskENTER_CRITICAL();
-			    	 PWM_SET_RIGHT (-PWM_Lowest);
-			    	 PWM_SET_LEFT  (PWM_Lowest);
+			    	 PWM_SET_RIGHT (-PWM_Lowest-100);
+			    	 PWM_SET_LEFT  (PWM_Lowest+100);
 			    	 taskEXIT_CRITICAL();
 			     }
 			     //taskEXIT_CRITICAL();
@@ -1529,6 +1526,9 @@ void LineSearchTask(void const * argument)
 {
   /* USER CODE BEGIN LineSearchTask */
 	int32_t pulse_incremnet=1000;
+	float Error=0;
+	float Error_total=0;
+	float Kp=1.5,Ki=0.5,Kd=0;
 	vTaskSuspend(LineSearchHandle);
 	vTaskResume(MileageHandle);
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
@@ -1549,7 +1549,11 @@ void LineSearchTask(void const * argument)
 	  						  taskEXIT_CRITICAL();
 	  		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
 	  		  	  	  		  Car_Stop();
-	  		  	  	  		  pulse_incremnet=600-PID_Line_Follow(10);
+	  		  	  	  		  Error=PID_Line_Follow(10);
+	  		  	  	  		  Error_total+=Error;
+	  		  	  	  		  pulse_incremnet=400-(int32_t) (Kp*Error-Ki*Error_total);
+	  		  	  	  		  pulse_incremnet>0?:20;
+
   }
   /* USER CODE END LineSearchTask */
 }
