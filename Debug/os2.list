@@ -2665,304 +2665,304 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
  8001738:	61bb      	str	r3, [r7, #24]
  800173a:	f04f 0300 	mov.w	r3, #0
  800173e:	62fb      	str	r3, [r7, #44]	; 0x2c
-			float KP=7, KI=0.05, KD=0;
- 8001740:	4b99      	ldr	r3, [pc, #612]	; (80019a8 <PID_Turning+0x2a0>)
+			float KP=5, KI=0.02, KD=6;
+ 8001740:	4b98      	ldr	r3, [pc, #608]	; (80019a4 <PID_Turning+0x29c>)
  8001742:	617b      	str	r3, [r7, #20]
- 8001744:	4b99      	ldr	r3, [pc, #612]	; (80019ac <PID_Turning+0x2a4>)
+ 8001744:	4b98      	ldr	r3, [pc, #608]	; (80019a8 <PID_Turning+0x2a0>)
  8001746:	613b      	str	r3, [r7, #16]
- 8001748:	f04f 0300 	mov.w	r3, #0
- 800174c:	60fb      	str	r3, [r7, #12]
+ 8001748:	4b98      	ldr	r3, [pc, #608]	; (80019ac <PID_Turning+0x2a4>)
+ 800174a:	60fb      	str	r3, [r7, #12]
 			int t=0;
- 800174e:	2300      	movs	r3, #0
- 8001750:	62bb      	str	r3, [r7, #40]	; 0x28
+ 800174c:	2300      	movs	r3, #0
+ 800174e:	62bb      	str	r3, [r7, #40]	; 0x28
 			uint8_t Flag=0; //Indicate that if verifying process begin.
- 8001752:	2300      	movs	r3, #0
- 8001754:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
+ 8001750:	2300      	movs	r3, #0
+ 8001752:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
 			Car_Stop();
- 8001758:	f7ff ff50 	bl	80015fc <Car_Stop>
+ 8001756:	f7ff ff51 	bl	80015fc <Car_Stop>
 			//delay(1500);
 			for(int i=0;i<10;i++)			//Get average initial direction
- 800175c:	2300      	movs	r3, #0
- 800175e:	623b      	str	r3, [r7, #32]
- 8001760:	e012      	b.n	8001788 <PID_Turning+0x80>
+ 800175a:	2300      	movs	r3, #0
+ 800175c:	623b      	str	r3, [r7, #32]
+ 800175e:	e012      	b.n	8001786 <PID_Turning+0x7e>
 			{
 //				if(gyro_ready_flag)
 //				{
 					//gyro_ready_flag=0;
 					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
- 8001762:	4b93      	ldr	r3, [pc, #588]	; (80019b0 <PID_Turning+0x2a8>)
- 8001764:	681b      	ldr	r3, [r3, #0]
- 8001766:	f04f 31ff 	mov.w	r1, #4294967295
- 800176a:	4618      	mov	r0, r3
- 800176c:	f004 fbba 	bl	8005ee4 <osSemaphoreWait>
+ 8001760:	4b93      	ldr	r3, [pc, #588]	; (80019b0 <PID_Turning+0x2a8>)
+ 8001762:	681b      	ldr	r3, [r3, #0]
+ 8001764:	f04f 31ff 	mov.w	r1, #4294967295
+ 8001768:	4618      	mov	r0, r3
+ 800176a:	f004 fbbb 	bl	8005ee4 <osSemaphoreWait>
 					//ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
 					initial_yaw+=angle.z;
- 8001770:	4b90      	ldr	r3, [pc, #576]	; (80019b4 <PID_Turning+0x2ac>)
- 8001772:	edd3 7a02 	vldr	s15, [r3, #8]
- 8001776:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
- 800177a:	ee77 7a27 	vadd.f32	s15, s14, s15
- 800177e:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
+ 800176e:	4b91      	ldr	r3, [pc, #580]	; (80019b4 <PID_Turning+0x2ac>)
+ 8001770:	edd3 7a02 	vldr	s15, [r3, #8]
+ 8001774:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
+ 8001778:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 800177c:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
 			for(int i=0;i<10;i++)			//Get average initial direction
- 8001782:	6a3b      	ldr	r3, [r7, #32]
- 8001784:	3301      	adds	r3, #1
- 8001786:	623b      	str	r3, [r7, #32]
- 8001788:	6a3b      	ldr	r3, [r7, #32]
- 800178a:	2b09      	cmp	r3, #9
- 800178c:	dde9      	ble.n	8001762 <PID_Turning+0x5a>
+ 8001780:	6a3b      	ldr	r3, [r7, #32]
+ 8001782:	3301      	adds	r3, #1
+ 8001784:	623b      	str	r3, [r7, #32]
+ 8001786:	6a3b      	ldr	r3, [r7, #32]
+ 8001788:	2b09      	cmp	r3, #9
+ 800178a:	dde9      	ble.n	8001760 <PID_Turning+0x58>
 					//delay(40);
 //				}
 //				else
 //					continue;
 			}
 			initial_yaw=initial_yaw/10;
- 800178e:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
- 8001792:	eef2 6a04 	vmov.f32	s13, #36	; 0x41200000  10.0
- 8001796:	eec7 7a26 	vdiv.f32	s15, s14, s13
- 800179a:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
+ 800178c:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
+ 8001790:	eef2 6a04 	vmov.f32	s13, #36	; 0x41200000  10.0
+ 8001794:	eec7 7a26 	vdiv.f32	s15, s14, s13
+ 8001798:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
 			PID_target=initial_yaw + increment_angle;
- 800179e:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
- 80017a2:	edd7 7a01 	vldr	s15, [r7, #4]
- 80017a6:	ee77 7a27 	vadd.f32	s15, s14, s15
- 80017aa:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
+ 800179c:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
+ 80017a0:	edd7 7a01 	vldr	s15, [r7, #4]
+ 80017a4:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 80017a8:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
 			if(PID_target > 180)
- 80017ae:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 80017b2:	ed9f 7a81 	vldr	s14, [pc, #516]	; 80019b8 <PID_Turning+0x2b0>
- 80017b6:	eef4 7ac7 	vcmpe.f32	s15, s14
- 80017ba:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 80017be:	dd07      	ble.n	80017d0 <PID_Turning+0xc8>
+ 80017ac:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 80017b0:	ed9f 7a81 	vldr	s14, [pc, #516]	; 80019b8 <PID_Turning+0x2b0>
+ 80017b4:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 80017b8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 80017bc:	dd07      	ble.n	80017ce <PID_Turning+0xc6>
 				PID_target=-360+PID_target;
- 80017c0:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 80017c4:	ed9f 7a7d 	vldr	s14, [pc, #500]	; 80019bc <PID_Turning+0x2b4>
- 80017c8:	ee77 7ac7 	vsub.f32	s15, s15, s14
- 80017cc:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
+ 80017be:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 80017c2:	ed9f 7a7e 	vldr	s14, [pc, #504]	; 80019bc <PID_Turning+0x2b4>
+ 80017c6:	ee77 7ac7 	vsub.f32	s15, s15, s14
+ 80017ca:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
 			if(PID_target <-180)
- 80017d0:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 80017d4:	ed9f 7a7a 	vldr	s14, [pc, #488]	; 80019c0 <PID_Turning+0x2b8>
- 80017d8:	eef4 7ac7 	vcmpe.f32	s15, s14
- 80017dc:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 80017e0:	d507      	bpl.n	80017f2 <PID_Turning+0xea>
+ 80017ce:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 80017d2:	ed9f 7a7b 	vldr	s14, [pc, #492]	; 80019c0 <PID_Turning+0x2b8>
+ 80017d6:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 80017da:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 80017de:	d507      	bpl.n	80017f0 <PID_Turning+0xe8>
 				PID_target=360+PID_target;
- 80017e2:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 80017e6:	ed9f 7a75 	vldr	s14, [pc, #468]	; 80019bc <PID_Turning+0x2b4>
- 80017ea:	ee77 7a87 	vadd.f32	s15, s15, s14
- 80017ee:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
+ 80017e0:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 80017e4:	ed9f 7a75 	vldr	s14, [pc, #468]	; 80019bc <PID_Turning+0x2b4>
+ 80017e8:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 80017ec:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
 //			  			  return 1;
 //			  		  }
 //			  	  if(gyro_ready_flag==0)
 //			  		  continue;
 //			  	  gyro_ready_flag=0;
 			  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
- 80017f2:	4b6f      	ldr	r3, [pc, #444]	; (80019b0 <PID_Turning+0x2a8>)
- 80017f4:	681b      	ldr	r3, [r3, #0]
- 80017f6:	f04f 31ff 	mov.w	r1, #4294967295
- 80017fa:	4618      	mov	r0, r3
- 80017fc:	f004 fb72 	bl	8005ee4 <osSemaphoreWait>
+ 80017f0:	4b6f      	ldr	r3, [pc, #444]	; (80019b0 <PID_Turning+0x2a8>)
+ 80017f2:	681b      	ldr	r3, [r3, #0]
+ 80017f4:	f04f 31ff 	mov.w	r1, #4294967295
+ 80017f8:	4618      	mov	r0, r3
+ 80017fa:	f004 fb73 	bl	8005ee4 <osSemaphoreWait>
 			  	 //ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
 
 			  	 PID_Input = angle.z;
- 8001800:	4b6c      	ldr	r3, [pc, #432]	; (80019b4 <PID_Turning+0x2ac>)
- 8001802:	689b      	ldr	r3, [r3, #8]
- 8001804:	61fb      	str	r3, [r7, #28]
+ 80017fe:	4b6d      	ldr	r3, [pc, #436]	; (80019b4 <PID_Turning+0x2ac>)
+ 8001800:	689b      	ldr	r3, [r3, #8]
+ 8001802:	61fb      	str	r3, [r7, #28]
 			  	 Error=Angle_Diff(PID_target, PID_Input);
- 8001806:	edd7 0a07 	vldr	s1, [r7, #28]
- 800180a:	ed97 0a0f 	vldr	s0, [r7, #60]	; 0x3c
- 800180e:	f7ff ff15 	bl	800163c <Angle_Diff>
- 8001812:	ed87 0a06 	vstr	s0, [r7, #24]
+ 8001804:	edd7 0a07 	vldr	s1, [r7, #28]
+ 8001808:	ed97 0a0f 	vldr	s0, [r7, #60]	; 0x3c
+ 800180c:	f7ff ff16 	bl	800163c <Angle_Diff>
+ 8001810:	ed87 0a06 	vstr	s0, [r7, #24]
 			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
- 8001816:	edd7 7a00 	vldr	s15, [r7]
- 800181a:	eef1 7a67 	vneg.f32	s15, s15
- 800181e:	ed97 7a06 	vldr	s14, [r7, #24]
- 8001822:	eeb4 7ae7 	vcmpe.f32	s14, s15
- 8001826:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800182a:	dd17      	ble.n	800185c <PID_Turning+0x154>
- 800182c:	ed97 7a06 	vldr	s14, [r7, #24]
- 8001830:	edd7 7a00 	vldr	s15, [r7]
- 8001834:	eeb4 7ae7 	vcmpe.f32	s14, s15
- 8001838:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800183c:	d50e      	bpl.n	800185c <PID_Turning+0x154>
- 800183e:	f897 3027 	ldrb.w	r3, [r7, #39]	; 0x27
- 8001842:	2b00      	cmp	r3, #0
- 8001844:	d10a      	bne.n	800185c <PID_Turning+0x154>
+ 8001814:	edd7 7a00 	vldr	s15, [r7]
+ 8001818:	eef1 7a67 	vneg.f32	s15, s15
+ 800181c:	ed97 7a06 	vldr	s14, [r7, #24]
+ 8001820:	eeb4 7ae7 	vcmpe.f32	s14, s15
+ 8001824:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001828:	dd17      	ble.n	800185a <PID_Turning+0x152>
+ 800182a:	ed97 7a06 	vldr	s14, [r7, #24]
+ 800182e:	edd7 7a00 	vldr	s15, [r7]
+ 8001832:	eeb4 7ae7 	vcmpe.f32	s14, s15
+ 8001836:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800183a:	d50e      	bpl.n	800185a <PID_Turning+0x152>
+ 800183c:	f897 3027 	ldrb.w	r3, [r7, #39]	; 0x27
+ 8001840:	2b00      	cmp	r3, #0
+ 8001842:	d10a      	bne.n	800185a <PID_Turning+0x152>
 			  	 {
 			  		 t++;
- 8001846:	6abb      	ldr	r3, [r7, #40]	; 0x28
- 8001848:	3301      	adds	r3, #1
- 800184a:	62bb      	str	r3, [r7, #40]	; 0x28
+ 8001844:	6abb      	ldr	r3, [r7, #40]	; 0x28
+ 8001846:	3301      	adds	r3, #1
+ 8001848:	62bb      	str	r3, [r7, #40]	; 0x28
 			  		if(t>2)
- 800184c:	6abb      	ldr	r3, [r7, #40]	; 0x28
- 800184e:	2b02      	cmp	r3, #2
- 8001850:	dd04      	ble.n	800185c <PID_Turning+0x154>
+ 800184a:	6abb      	ldr	r3, [r7, #40]	; 0x28
+ 800184c:	2b02      	cmp	r3, #2
+ 800184e:	dd04      	ble.n	800185a <PID_Turning+0x152>
 			  		{
 			  			Flag = 1;
- 8001852:	2301      	movs	r3, #1
- 8001854:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
+ 8001850:	2301      	movs	r3, #1
+ 8001852:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
 			  			t=0;
- 8001858:	2300      	movs	r3, #0
- 800185a:	62bb      	str	r3, [r7, #40]	; 0x28
+ 8001856:	2300      	movs	r3, #0
+ 8001858:	62bb      	str	r3, [r7, #40]	; 0x28
 			  		}
 			  	 }
 			  	 if(Flag)
- 800185c:	f897 3027 	ldrb.w	r3, [r7, #39]	; 0x27
- 8001860:	2b00      	cmp	r3, #0
- 8001862:	d026      	beq.n	80018b2 <PID_Turning+0x1aa>
+ 800185a:	f897 3027 	ldrb.w	r3, [r7, #39]	; 0x27
+ 800185e:	2b00      	cmp	r3, #0
+ 8001860:	d026      	beq.n	80018b0 <PID_Turning+0x1a8>
 			  	 {
 			  		if(t>Angle_stable_cycles)
- 8001864:	6abb      	ldr	r3, [r7, #40]	; 0x28
- 8001866:	2b02      	cmp	r3, #2
- 8001868:	dd06      	ble.n	8001878 <PID_Turning+0x170>
+ 8001862:	6abb      	ldr	r3, [r7, #40]	; 0x28
+ 8001864:	2b02      	cmp	r3, #2
+ 8001866:	dd06      	ble.n	8001876 <PID_Turning+0x16e>
 			  		{
 			  			Flag=0;
- 800186a:	2300      	movs	r3, #0
- 800186c:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
+ 8001868:	2300      	movs	r3, #0
+ 800186a:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
 			  			t=0;
- 8001870:	2300      	movs	r3, #0
- 8001872:	62bb      	str	r3, [r7, #40]	; 0x28
+ 800186e:	2300      	movs	r3, #0
+ 8001870:	62bb      	str	r3, [r7, #40]	; 0x28
 			  			return 0;
- 8001874:	2300      	movs	r3, #0
- 8001876:	e092      	b.n	800199e <PID_Turning+0x296>
+ 8001872:	2300      	movs	r3, #0
+ 8001874:	e092      	b.n	800199c <PID_Turning+0x294>
 			  		}
 			  		else if((Error > -Accept_Error) && (Error < Accept_Error))
- 8001878:	edd7 7a00 	vldr	s15, [r7]
- 800187c:	eef1 7a67 	vneg.f32	s15, s15
- 8001880:	ed97 7a06 	vldr	s14, [r7, #24]
- 8001884:	eeb4 7ae7 	vcmpe.f32	s14, s15
- 8001888:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800188c:	dd0c      	ble.n	80018a8 <PID_Turning+0x1a0>
- 800188e:	ed97 7a06 	vldr	s14, [r7, #24]
- 8001892:	edd7 7a00 	vldr	s15, [r7]
- 8001896:	eeb4 7ae7 	vcmpe.f32	s14, s15
- 800189a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800189e:	d503      	bpl.n	80018a8 <PID_Turning+0x1a0>
+ 8001876:	edd7 7a00 	vldr	s15, [r7]
+ 800187a:	eef1 7a67 	vneg.f32	s15, s15
+ 800187e:	ed97 7a06 	vldr	s14, [r7, #24]
+ 8001882:	eeb4 7ae7 	vcmpe.f32	s14, s15
+ 8001886:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800188a:	dd0c      	ble.n	80018a6 <PID_Turning+0x19e>
+ 800188c:	ed97 7a06 	vldr	s14, [r7, #24]
+ 8001890:	edd7 7a00 	vldr	s15, [r7]
+ 8001894:	eeb4 7ae7 	vcmpe.f32	s14, s15
+ 8001898:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800189c:	d503      	bpl.n	80018a6 <PID_Turning+0x19e>
 			  		{
 			  			t++;
- 80018a0:	6abb      	ldr	r3, [r7, #40]	; 0x28
- 80018a2:	3301      	adds	r3, #1
- 80018a4:	62bb      	str	r3, [r7, #40]	; 0x28
- 80018a6:	e004      	b.n	80018b2 <PID_Turning+0x1aa>
+ 800189e:	6abb      	ldr	r3, [r7, #40]	; 0x28
+ 80018a0:	3301      	adds	r3, #1
+ 80018a2:	62bb      	str	r3, [r7, #40]	; 0x28
+ 80018a4:	e004      	b.n	80018b0 <PID_Turning+0x1a8>
 			  		}
 			  		else
 			  		{
 			  			Flag=0;
- 80018a8:	2300      	movs	r3, #0
- 80018aa:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
+ 80018a6:	2300      	movs	r3, #0
+ 80018a8:	f887 3027 	strb.w	r3, [r7, #39]	; 0x27
 			  			t=0;
- 80018ae:	2300      	movs	r3, #0
- 80018b0:	62bb      	str	r3, [r7, #40]	; 0x28
+ 80018ac:	2300      	movs	r3, #0
+ 80018ae:	62bb      	str	r3, [r7, #40]	; 0x28
 			  		}
 			  	 }
+			  	 Error_Total=Error_Total+KI*Error;
+ 80018b0:	ed97 7a04 	vldr	s14, [r7, #16]
+ 80018b4:	edd7 7a06 	vldr	s15, [r7, #24]
+ 80018b8:	ee67 7a27 	vmul.f32	s15, s14, s15
+ 80018bc:	ed97 7a0b 	vldr	s14, [r7, #44]	; 0x2c
+ 80018c0:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 80018c4:	edc7 7a0b 	vstr	s15, [r7, #44]	; 0x2c
 			     PID_Output = KP * Error  +
- 80018b2:	ed97 7a05 	vldr	s14, [r7, #20]
- 80018b6:	edd7 7a06 	vldr	s15, [r7, #24]
- 80018ba:	ee27 7a27 	vmul.f32	s14, s14, s15
+ 80018c8:	ed97 7a05 	vldr	s14, [r7, #20]
+ 80018cc:	edd7 7a06 	vldr	s15, [r7, #24]
+ 80018d0:	ee27 7a27 	vmul.f32	s14, s14, s15
 			 				  KD * (Error - PID_Error_Last ) +
- 80018be:	edd7 6a06 	vldr	s13, [r7, #24]
- 80018c2:	edd7 7a0e 	vldr	s15, [r7, #56]	; 0x38
- 80018c6:	ee76 6ae7 	vsub.f32	s13, s13, s15
- 80018ca:	edd7 7a03 	vldr	s15, [r7, #12]
- 80018ce:	ee66 7aa7 	vmul.f32	s15, s13, s15
+ 80018d4:	edd7 6a06 	vldr	s13, [r7, #24]
+ 80018d8:	edd7 7a0e 	vldr	s15, [r7, #56]	; 0x38
+ 80018dc:	ee76 6ae7 	vsub.f32	s13, s13, s15
+ 80018e0:	edd7 7a03 	vldr	s15, [r7, #12]
+ 80018e4:	ee66 7aa7 	vmul.f32	s15, s13, s15
 			     PID_Output = KP * Error  +
- 80018d2:	ee77 7a27 	vadd.f32	s15, s14, s15
- 80018d6:	ed97 7a0b 	vldr	s14, [r7, #44]	; 0x2c
- 80018da:	ee77 7a27 	vadd.f32	s15, s14, s15
- 80018de:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
+ 80018e8:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 80018ec:	ed97 7a0b 	vldr	s14, [r7, #44]	; 0x2c
+ 80018f0:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 80018f4:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
 							  Error_Total;
-			     Error_Total=Error_Total+KI*Error;
- 80018e2:	ed97 7a04 	vldr	s14, [r7, #16]
- 80018e6:	edd7 7a06 	vldr	s15, [r7, #24]
- 80018ea:	ee67 7a27 	vmul.f32	s15, s14, s15
- 80018ee:	ed97 7a0b 	vldr	s14, [r7, #44]	; 0x2c
- 80018f2:	ee77 7a27 	vadd.f32	s15, s14, s15
- 80018f6:	edc7 7a0b 	vstr	s15, [r7, #44]	; 0x2c
 			     PID_Error_Last = Error;
- 80018fa:	69bb      	ldr	r3, [r7, #24]
- 80018fc:	63bb      	str	r3, [r7, #56]	; 0x38
+ 80018f8:	69bb      	ldr	r3, [r7, #24]
+ 80018fa:	63bb      	str	r3, [r7, #56]	; 0x38
 			     if(PID_Output < 0)
- 80018fe:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001902:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8001906:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800190a:	d513      	bpl.n	8001934 <PID_Turning+0x22c>
+ 80018fc:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001900:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8001904:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001908:	d513      	bpl.n	8001932 <PID_Turning+0x22a>
 			     {
 			    	 PID_Output-=PWM_Lowest;
- 800190c:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001910:	ed9f 7a2c 	vldr	s14, [pc, #176]	; 80019c4 <PID_Turning+0x2bc>
- 8001914:	ee77 7ac7 	vsub.f32	s15, s15, s14
- 8001918:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
+ 800190a:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 800190e:	ed9f 7a2d 	vldr	s14, [pc, #180]	; 80019c4 <PID_Turning+0x2bc>
+ 8001912:	ee77 7ac7 	vsub.f32	s15, s15, s14
+ 8001916:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
 			    	 if(-PID_Output > PWM_Higest)
- 800191c:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001920:	ed9f 7a29 	vldr	s14, [pc, #164]	; 80019c8 <PID_Turning+0x2c0>
- 8001924:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8001928:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800192c:	d520      	bpl.n	8001970 <PID_Turning+0x268>
+ 800191a:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 800191e:	ed9f 7a2a 	vldr	s14, [pc, #168]	; 80019c8 <PID_Turning+0x2c0>
+ 8001922:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8001926:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800192a:	d520      	bpl.n	800196e <PID_Turning+0x266>
 			    	 	PID_Output=-PWM_Higest;
- 800192e:	4b27      	ldr	r3, [pc, #156]	; (80019cc <PID_Turning+0x2c4>)
- 8001930:	633b      	str	r3, [r7, #48]	; 0x30
- 8001932:	e01d      	b.n	8001970 <PID_Turning+0x268>
+ 800192c:	4b27      	ldr	r3, [pc, #156]	; (80019cc <PID_Turning+0x2c4>)
+ 800192e:	633b      	str	r3, [r7, #48]	; 0x30
+ 8001930:	e01d      	b.n	800196e <PID_Turning+0x266>
 			     }
 
 			     else if(PID_Output > 0)
- 8001934:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001938:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 800193c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001940:	dd13      	ble.n	800196a <PID_Turning+0x262>
+ 8001932:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001936:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 800193a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800193e:	dd13      	ble.n	8001968 <PID_Turning+0x260>
 			     {
 			    	 PID_Output+=PWM_Lowest;
- 8001942:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001946:	ed9f 7a1f 	vldr	s14, [pc, #124]	; 80019c4 <PID_Turning+0x2bc>
- 800194a:	ee77 7a87 	vadd.f32	s15, s15, s14
- 800194e:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
+ 8001940:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001944:	ed9f 7a1f 	vldr	s14, [pc, #124]	; 80019c4 <PID_Turning+0x2bc>
+ 8001948:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 800194c:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
 			    	 if(-PID_Output > PWM_Higest)
- 8001952:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001956:	ed9f 7a1c 	vldr	s14, [pc, #112]	; 80019c8 <PID_Turning+0x2c0>
- 800195a:	eef4 7ac7 	vcmpe.f32	s15, s14
- 800195e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001962:	d505      	bpl.n	8001970 <PID_Turning+0x268>
+ 8001950:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001954:	ed9f 7a1c 	vldr	s14, [pc, #112]	; 80019c8 <PID_Turning+0x2c0>
+ 8001958:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 800195c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001960:	d505      	bpl.n	800196e <PID_Turning+0x266>
 			    	 	PID_Output=-PWM_Higest;
- 8001964:	4b19      	ldr	r3, [pc, #100]	; (80019cc <PID_Turning+0x2c4>)
- 8001966:	633b      	str	r3, [r7, #48]	; 0x30
- 8001968:	e002      	b.n	8001970 <PID_Turning+0x268>
+ 8001962:	4b1a      	ldr	r3, [pc, #104]	; (80019cc <PID_Turning+0x2c4>)
+ 8001964:	633b      	str	r3, [r7, #48]	; 0x30
+ 8001966:	e002      	b.n	800196e <PID_Turning+0x266>
 			     }
 			     else
 			    	PID_Output=0;
- 800196a:	f04f 0300 	mov.w	r3, #0
- 800196e:	633b      	str	r3, [r7, #48]	; 0x30
+ 8001968:	f04f 0300 	mov.w	r3, #0
+ 800196c:	633b      	str	r3, [r7, #48]	; 0x30
 //			     {
 //			    	 if(-PID_Output > PWM_Higest)
 //			    		 PID_Output=-PWM_Higest;
 //			    	 if(-PID_Output < PWM_Lowest)
 //			    	 	 PID_Output=-PWM_Lowest;
 			    	 taskENTER_CRITICAL();
- 8001970:	f006 fc20 	bl	80081b4 <vPortEnterCritical>
+ 800196e:	f006 fc21 	bl	80081b4 <vPortEnterCritical>
 			    	 PWM_SET_RIGHT ((int32_t) PID_Output);
- 8001974:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001978:	eefd 7ae7 	vcvt.s32.f32	s15, s15
- 800197c:	ee17 0a90 	vmov	r0, s15
- 8001980:	f000 fa6a 	bl	8001e58 <PWM_SET_RIGHT>
+ 8001972:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001976:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 800197a:	ee17 0a90 	vmov	r0, s15
+ 800197e:	f000 fa6b 	bl	8001e58 <PWM_SET_RIGHT>
 			    	 PWM_SET_LEFT((int32_t)(-PID_Output));
- 8001984:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001988:	eef1 7a67 	vneg.f32	s15, s15
- 800198c:	eefd 7ae7 	vcvt.s32.f32	s15, s15
- 8001990:	ee17 0a90 	vmov	r0, s15
- 8001994:	f000 fa28 	bl	8001de8 <PWM_SET_LEFT>
+ 8001982:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001986:	eef1 7a67 	vneg.f32	s15, s15
+ 800198a:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 800198e:	ee17 0a90 	vmov	r0, s15
+ 8001992:	f000 fa29 	bl	8001de8 <PWM_SET_LEFT>
 			    	 taskEXIT_CRITICAL();
- 8001998:	f006 fc3c 	bl	8008214 <vPortExitCritical>
+ 8001996:	f006 fc3d 	bl	8008214 <vPortExitCritical>
 			  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
- 800199c:	e729      	b.n	80017f2 <PID_Turning+0xea>
+ 800199a:	e729      	b.n	80017f0 <PID_Turning+0xe8>
 			     }
 			     delay(2);
 }
- 800199e:	4618      	mov	r0, r3
- 80019a0:	3740      	adds	r7, #64	; 0x40
- 80019a2:	46bd      	mov	sp, r7
- 80019a4:	bd80      	pop	{r7, pc}
- 80019a6:	bf00      	nop
- 80019a8:	40e00000 	.word	0x40e00000
- 80019ac:	3d4ccccd 	.word	0x3d4ccccd
+ 800199c:	4618      	mov	r0, r3
+ 800199e:	3740      	adds	r7, #64	; 0x40
+ 80019a0:	46bd      	mov	sp, r7
+ 80019a2:	bd80      	pop	{r7, pc}
+ 80019a4:	40a00000 	.word	0x40a00000
+ 80019a8:	3ca3d70a 	.word	0x3ca3d70a
+ 80019ac:	40c00000 	.word	0x40c00000
  80019b0:	200041cc 	.word	0x200041cc
  80019b4:	2000028c 	.word	0x2000028c
  80019b8:	43340000 	.word	0x43340000
  80019bc:	43b40000 	.word	0x43b40000
  80019c0:	c3340000 	.word	0xc3340000
- 80019c4:	43fa0000 	.word	0x43fa0000
+ 80019c4:	44098000 	.word	0x44098000
  80019c8:	c4a28000 	.word	0xc4a28000
  80019cc:	c4a28000 	.word	0xc4a28000
 
@@ -3088,36 +3088,36 @@ void PID_Straight(void)
  8001ab2:	ed97 0a0a 	vldr	s0, [r7, #40]	; 0x28
  8001ab6:	f7ff fdc1 	bl	800163c <Angle_Diff>
  8001aba:	ed87 0a07 	vstr	s0, [r7, #28]
-					     PID_Output = KP * Error  +
- 8001abe:	ed97 7a06 	vldr	s14, [r7, #24]
- 8001ac2:	edd7 7a07 	vldr	s15, [r7, #28]
- 8001ac6:	ee27 7a27 	vmul.f32	s14, s14, s15
-					 				  KD * (Error - PID_Error_Last ) +
- 8001aca:	edd7 6a07 	vldr	s13, [r7, #28]
- 8001ace:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001ad2:	ee76 6ae7 	vsub.f32	s13, s13, s15
- 8001ad6:	edd7 7a04 	vldr	s15, [r7, #16]
- 8001ada:	ee66 7aa7 	vmul.f32	s15, s13, s15
-					     PID_Output = KP * Error  +
- 8001ade:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001ae2:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
- 8001ae6:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001aea:	edc7 7a09 	vstr	s15, [r7, #36]	; 0x24
-									  Error_Total;
 					     Error_Total=Error_Total+KI*Error;
- 8001aee:	ed97 7a05 	vldr	s14, [r7, #20]
- 8001af2:	edd7 7a07 	vldr	s15, [r7, #28]
- 8001af6:	ee67 7a27 	vmul.f32	s15, s14, s15
- 8001afa:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
- 8001afe:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001b02:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
+ 8001abe:	ed97 7a05 	vldr	s14, [r7, #20]
+ 8001ac2:	edd7 7a07 	vldr	s15, [r7, #28]
+ 8001ac6:	ee67 7a27 	vmul.f32	s15, s14, s15
+ 8001aca:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
+ 8001ace:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8001ad2:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
 					     Error_Total_Total= Error_Total_Total+KI2*Error_Total;
- 8001b06:	ed97 7a03 	vldr	s14, [r7, #12]
- 8001b0a:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
- 8001b0e:	ee67 7a27 	vmul.f32	s15, s14, s15
- 8001b12:	ed97 7a0c 	vldr	s14, [r7, #48]	; 0x30
+ 8001ad6:	ed97 7a03 	vldr	s14, [r7, #12]
+ 8001ada:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
+ 8001ade:	ee67 7a27 	vmul.f32	s15, s14, s15
+ 8001ae2:	ed97 7a0c 	vldr	s14, [r7, #48]	; 0x30
+ 8001ae6:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8001aea:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
+					     PID_Output = KP * Error  +
+ 8001aee:	ed97 7a06 	vldr	s14, [r7, #24]
+ 8001af2:	edd7 7a07 	vldr	s15, [r7, #28]
+ 8001af6:	ee27 7a27 	vmul.f32	s14, s14, s15
+					 				  KD * (Error - PID_Error_Last ) +
+ 8001afa:	edd7 6a07 	vldr	s13, [r7, #28]
+ 8001afe:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001b02:	ee76 6ae7 	vsub.f32	s13, s13, s15
+ 8001b06:	edd7 7a04 	vldr	s15, [r7, #16]
+ 8001b0a:	ee66 7aa7 	vmul.f32	s15, s13, s15
+					     PID_Output = KP * Error  +
+ 8001b0e:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8001b12:	ed97 7a0d 	vldr	s14, [r7, #52]	; 0x34
  8001b16:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001b1a:	edc7 7a0c 	vstr	s15, [r7, #48]	; 0x30
+ 8001b1a:	edc7 7a09 	vstr	s15, [r7, #36]	; 0x24
+									  Error_Total;
 					     PID_Error_Last = Error;
  8001b1e:	69fb      	ldr	r3, [r7, #28]
  8001b20:	63fb      	str	r3, [r7, #60]	; 0x3c
@@ -3140,9 +3140,10 @@ void PID_Straight(void)
  8001b44:	607b      	str	r3, [r7, #4]
 					     pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
  8001b46:	68bb      	ldr	r3, [r7, #8]
- 8001b48:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
- 8001b4c:	bfb8      	it	lt
- 8001b4e:	f44f 73fa 	movlt.w	r3, #500	; 0x1f4
+ 8001b48:	f240 2226 	movw	r2, #550	; 0x226
+ 8001b4c:	4293      	cmp	r3, r2
+ 8001b4e:	bfb8      	it	lt
+ 8001b50:	4613      	movlt	r3, r2
  8001b52:	60bb      	str	r3, [r7, #8]
 					     pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
  8001b54:	68bb      	ldr	r3, [r7, #8]
@@ -3153,9 +3154,10 @@ void PID_Straight(void)
  8001b60:	60bb      	str	r3, [r7, #8]
 					     pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
  8001b62:	687b      	ldr	r3, [r7, #4]
- 8001b64:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
- 8001b68:	bfb8      	it	lt
- 8001b6a:	f44f 73fa 	movlt.w	r3, #500	; 0x1f4
+ 8001b64:	f240 2226 	movw	r2, #550	; 0x226
+ 8001b68:	4293      	cmp	r3, r2
+ 8001b6a:	bfb8      	it	lt
+ 8001b6c:	4613      	movlt	r3, r2
  8001b6e:	607b      	str	r3, [r7, #4]
 					     pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
  8001b70:	687b      	ldr	r3, [r7, #4]
@@ -3780,8 +3782,8 @@ void StreamTask(void const * argument)
  8001f62:	681b      	ldr	r3, [r3, #0]
  8001f64:	4618      	mov	r0, r3
  8001f66:	f005 f95b 	bl	8007220 <vTaskResume>
-		  	  	  	  	  PID_Turning(-90,1);//-90 turn right 90degrees, 2 degree error is accepted
- 8001f6a:	eef7 0a00 	vmov.f32	s1, #112	; 0x3f800000  1.0
+		  	  	  	  	  PID_Turning(-90,1.5);//-90 turn right 90degrees, 2 degree error is accepted
+ 8001f6a:	eef7 0a08 	vmov.f32	s1, #120	; 0x3fc00000  1.5
  8001f6e:	ed9f 0a58 	vldr	s0, [pc, #352]	; 80020d0 <StreamTask+0x208>
  8001f72:	f7ff fbc9 	bl	8001708 <PID_Turning>
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
@@ -3835,11 +3837,11 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
  8001fd2:	e072      	b.n	80020ba <StreamTask+0x1f2>
 	  case Go_Mile_1:
-						  pulse_incremnet=1300;//室内
- 8001fd4:	f240 5314 	movw	r3, #1300	; 0x514
+						  pulse_incremnet=3600;//室内
+ 8001fd4:	f44f 6361 	mov.w	r3, #3600	; 0xe10
  8001fd8:	60bb      	str	r3, [r7, #8]
-						  //pulse_incremnet=33000;//室外
-						  //pulse_incremnet=600; //小正方形
+						  //pulse_incremnet=23000;//室外
+						  //pulse_incremnet=800; //小正方形
 						  critical_pulses=pulse_incremnet+number_of_pulses;
  8001fda:	4b41      	ldr	r3, [pc, #260]	; (80020e0 <StreamTask+0x218>)
  8001fdc:	681b      	ldr	r3, [r3, #0]
@@ -3978,7 +3980,7 @@ void StreamTask(void const * argument)
  80020f0:	200040e8 	.word	0x200040e8
  80020f4:	200041c4 	.word	0x200041c4
  80020f8:	200041d0 	.word	0x200041d0
- 80020fc:	fffffdbc 	.word	0xfffffdbc
+ 80020fc:	fffffd8a 	.word	0xfffffd8a
 
 08002100 <GyroReceiveTask>:
 * @param argument: Not used
