@@ -911,7 +911,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			    	 PWM_SET_LEFT((int32_t)(-PID_Output));
 			    	 taskEXIT_CRITICAL();
 			     }
-			     delay(2);
+			     //delay(2);
 }
 
 void PID_Straight(void)

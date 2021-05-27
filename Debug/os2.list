@@ -2948,7 +2948,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
  800199a:	e729      	b.n	80017f0 <PID_Turning+0xe8>
 			     }
-			     delay(2);
+			     //delay(2);
 }
  800199c:	4618      	mov	r0, r3
  800199e:	3740      	adds	r7, #64	; 0x40
