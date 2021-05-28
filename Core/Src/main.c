@@ -988,7 +988,7 @@ void PID_Straight(void)
 
 float PID_Line_Follow(float Accept_Error)
 {
-#define MAX_TIME 800
+#define MAX_TIME 500
 			volatile uint16_t PID_Target=0;
 		    volatile float Kp = 9, Ki = 0, Kd =0;     // PID系数
 			float PID_Error_Last=0;
@@ -1088,7 +1088,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		Rx_Buf[1]=0;
   		//camera_ready_flag=1;
   		osSemaphoreRelease(CameraUARTSemHandle);
-  		//HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   		if(camera_recieve_IT_flag)
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   		/*if (Rx_Cnt>20)
@@ -1531,7 +1531,7 @@ void LineSearchTask(void const * argument)
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
-	float Kp=9,Ki=0,Kd=0;
+	float Kp=9,Ki=2,Kd=0;
 	int Error_count=0;
 	int Boost_count=0;
 	vTaskSuspend(LineSearchHandle);
