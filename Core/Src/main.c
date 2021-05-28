@@ -57,9 +57,9 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 800  //无反馈时电机工作占空
-#define PWM_Lowest 500
-#define PWM_Higest 1300 //for our motor, this value should less than 1300
+#define PWM_Mid 1550  //无反馈时电机工作占空
+#define PWM_Lowest 700
+#define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
 
@@ -988,9 +988,9 @@ void PID_Straight(void)
 
 float PID_Line_Follow(float Accept_Error)
 {
-#define MAX_TIME 1000
+#define MAX_TIME 800
 			volatile uint16_t PID_Target=0;
-		    volatile float Kp = 2, Ki = 0, Kd =0;     // PID系数
+		    volatile float Kp = 9, Ki = 0, Kd =0;     // PID系数
 			float PID_Error_Last=0;
 			float PID_Output=0;                    // PWM输出占空
 			float Error = 0, Error_Total=0,First_Error=0;
@@ -998,6 +998,7 @@ float PID_Line_Follow(float Accept_Error)
 			int in_place_count=0;
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+			delay(200);
 						  	 for(int i = 0;i<3;i++)
 						  	 {
 						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
@@ -1038,15 +1039,15 @@ float PID_Line_Follow(float Accept_Error)
 			     if(PID_Output>0)
 			     {
 			    	 taskENTER_CRITICAL();
-			    	 PWM_SET_RIGHT (PWM_Lowest+100);
-			    	 PWM_SET_LEFT  (-PWM_Lowest-100);
+			    	 PWM_SET_RIGHT (PWM_Lowest+200);
+			    	 PWM_SET_LEFT  (-PWM_Lowest-200);
 			    	 taskEXIT_CRITICAL();
 			     }
 			     else
 			     {
 			    	 taskENTER_CRITICAL();
-			    	 PWM_SET_RIGHT (-PWM_Lowest-100);
-			    	 PWM_SET_LEFT  (PWM_Lowest+100);
+			    	 PWM_SET_RIGHT (-PWM_Lowest-200);
+			    	 PWM_SET_LEFT  (PWM_Lowest+200);
 			    	 taskEXIT_CRITICAL();
 			     }
 			     //taskEXIT_CRITICAL();
@@ -1259,6 +1260,7 @@ void StreamTask(void const * argument)
 		  		  	  	  delay(500);
 		  		  	  	  state= Line_Search;
 		  		  	  	  camera_recieve_IT_flag=1;
+		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  		  	  	  vTaskResume(LineSearchHandle);
 		  	  	  	  	  //camera_recieve_IT_flag=0;
 		  	  	  	  	  //vTaskResume(GyroReceiveHandle);
@@ -1486,7 +1488,7 @@ void MileageTask(void const * argument)
 		  osSemaphoreRelease(MileageSemHandle);
 	  else
 		  osSemaphoreRelease(MileageNegSemHandle);
-	  delay(5);
+	  delay(50);
 	  //HAL_Delay(1000);
 	  //osDelay(1);
   }
@@ -1525,10 +1527,13 @@ void GoStraightTask(void const * argument)
 void LineSearchTask(void const * argument)
 {
   /* USER CODE BEGIN LineSearchTask */
-	int32_t pulse_incremnet=1000;
+	int32_t pulse_increment=1200;
 	float Error=0;
 	float Error_total=0;
-	float Kp=1.5,Ki=0.5,Kd=0;
+	float pulse_increment_float=0;
+	float Kp=9,Ki=0,Kd=0;
+	int Error_count=0;
+	int Boost_count=0;
 	vTaskSuspend(LineSearchHandle);
 	vTaskResume(MileageHandle);
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
@@ -1540,7 +1545,7 @@ void LineSearchTask(void const * argument)
 	  						  //pulse_incremnet=600; //小正方形
 	  						  critical_pulses=0;
 	  						  vTaskResume(MileageHandle);
-	  						  critical_pulses=pulse_incremnet+number_of_pulses;
+	  						  critical_pulses=pulse_increment+number_of_pulses;
 	  						  osSemaphoreRelease(MileageSemHandle);
 	  						  osSemaphoreWait(MileageSemHandle, osWaitForever);
 	  						  taskENTER_CRITICAL();
@@ -1551,8 +1556,34 @@ void LineSearchTask(void const * argument)
 	  		  	  	  		  Car_Stop();
 	  		  	  	  		  Error=PID_Line_Follow(10);
 	  		  	  	  		  Error_total+=Error;
-	  		  	  	  		  pulse_incremnet=400-(int32_t) (Kp*Error-Ki*Error_total);
-	  		  	  	  		  pulse_incremnet>0?:20;
+	  		  	  	  		  	  if(0/*Error<12*/)
+	  		  	  	  			  {	  Error_count++;
+//									  if(Boost_count>2)
+//										 {
+//											  pulse_increment=4500;
+//											  Error_count++;
+//											  Boost_count=0;
+//											  Error_count=0;
+//											  continue;
+//										 }
+									  if(Error_count>15)
+	  		  	  	  			  		  	  	  			  {
+	  		  	  	  			  		  	  	  			  	  pulse_increment=900;
+	  		  	  	  			  		  	  	  			  			  Error_count=0;
+	  		  	  	  			  		  	  	  			  			  Boost_count++;
+	  		  	  	  			  		  	  	  			  			  continue;
+	  		  	  	  			  		  	  	  			  }
+									  pulse_increment_float=300-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+									  	  		  	  	  			  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
+	  		  	  	  			  }
+
+	  		  	  	  		  else
+	  		  	  	  		  {
+	  		  	  	  			  pulse_increment_float=300-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+	  		  	  	  			  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
+	  		  	  	  			  Error_count=0;
+	  		  	  	  			  Boost_count=0;
+	  		  	  	  		  }
 
   }
   /* USER CODE END LineSearchTask */
