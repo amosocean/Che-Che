@@ -1320,9 +1320,10 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case Mile_Adjust:
 		  	  	  	  	  vTaskResume(MileageHandle);
-		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
 		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest-80);
 		  	  	  		  PWM_SET_RIGHT(-PWM_Lowest-80);
+		  	  	  		  osSemaphoreRelease(MileageNegSemHandle);
+		  	  	  		  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
 		  	  	  		  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
 		  	  	  		  Car_Stop();
 		  	  	  		  vTaskSuspend(MileageHandle);
@@ -1610,11 +1611,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   else if(htim->Instance==TIM2)
   	{
-  		mileage_IT_number++;
-  		//mileage_counter=0;
-  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
-  		//HAL_UART_Transmit(&huart1, (uint8_t*)&number, sizeof(number), 1000);
-  		// __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
+	   if(__HAL_TIM_GET_COUNTER(&htim2)>3000)
+	    	mileage_IT_number--;
+	   else
+	    	mileage_IT_number++;
+	   HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   	}
   /* USER CODE END Callback 1 */
 }
