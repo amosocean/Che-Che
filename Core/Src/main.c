@@ -999,12 +999,14 @@ float PID_Line_Follow(float Accept_Error)
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 			delay(200);
-						  	 for(int i = 0;i<3;i++)
+						  	 for(int i = 0;i<2;i++)
 						  	 {
+						  		 osSemaphoreRelease(GyroReadySemHandle);
+						  		osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
 						  		 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  	 }
-						  	 PID_Input/=3;
+						  	 PID_Input/=2;
 			First_Error= PID_Target - PID_Input;
 			Error=PID_Target - PID_Input;
 		  /* Infinite loop */
@@ -1531,7 +1533,7 @@ void LineSearchTask(void const * argument)
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
-	float Kp=9,Ki=2,Kd=0;
+	float Kp=9,Ki=0,Kd=0;
 	int Error_count=0;
 	int Boost_count=0;
 	vTaskSuspend(LineSearchHandle);
