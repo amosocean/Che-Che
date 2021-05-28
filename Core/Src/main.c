@@ -57,7 +57,7 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1550  //无反馈时电机工作占空
+#define PWM_Mid 1600  //无反馈时电机工作占空
 #define PWM_Lowest 700
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
@@ -1581,7 +1581,7 @@ void LineSearchTask(void const * argument)
 
 	  		  	  	  		  else
 	  		  	  	  		  {
-	  		  	  	  			  pulse_increment_float=400-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+	  		  	  	  			  pulse_increment_float=500-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
 	  		  	  	  			  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
 	  		  	  	  			  Error_count=0;
 	  		  	  	  			  Boost_count=0;
