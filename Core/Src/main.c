@@ -988,9 +988,9 @@ void PID_Straight(void)
 
 float PID_Line_Follow(float Accept_Error)
 {
-#define MAX_TIME 500
+#define MAX_TIME 400
 			volatile uint16_t PID_Target=0;
-		    volatile float Kp = 9, Ki = 0, Kd =0;     // PID系数
+		    volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数
 			float PID_Error_Last=0;
 			float PID_Output=0;                    // PWM输出占空
 			float Error = 0, Error_Total=0,First_Error=0;
@@ -999,14 +999,14 @@ float PID_Line_Follow(float Accept_Error)
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 			delay(200);
-						  	 for(int i = 0;i<2;i++)
+						  	 for(int i = 0;i<1;i++)
 						  	 {
 						  		 osSemaphoreRelease(GyroReadySemHandle);
 						  		osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
 						  		 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  	 }
-						  	 PID_Input/=2;
+						  	 PID_Input/=1;
 			First_Error= PID_Target - PID_Input;
 			Error=PID_Target - PID_Input;
 		  /* Infinite loop */
@@ -1235,7 +1235,7 @@ void StreamTask(void const * argument)
 	uint32_t pulse_incremnet=0;
 	float last_error=0;
 	Car_Initial();
-	delay(1000);
+	delay(3000);
   /* Infinite loop */
   for(;;)
   {
@@ -1534,7 +1534,7 @@ void LineSearchTask(void const * argument)
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
-	float Kp=10,Ki=0,Kd=0;
+	float Kp=7,Ki=0,Kd=0;
 	int Error_count=0;
 	int Boost_count=0;
 	vTaskSuspend(LineSearchHandle);
