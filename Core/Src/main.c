@@ -998,15 +998,15 @@ float PID_Line_Follow(float Accept_Error)
 			int in_place_count=0;
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
-			delay(200);
-						  	 for(int i = 0;i<1;i++)
+			delay(500);
+						  	 for(int i = 0;i<2;i++)
 						  	 {
-						  		 osSemaphoreRelease(GyroReadySemHandle);
+						  		 //osSemaphoreRelease(GyroReadySemHandle);
 						  		osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
-						  		 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+						  		 //osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  	 }
-						  	 PID_Input/=1;
+						  	 PID_Input/=2;
 			First_Error= PID_Target - PID_Input;
 			Error=PID_Target - PID_Input;
 		  /* Infinite loop */
@@ -1081,15 +1081,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
   	if (huart->Instance==USART2){
   		Camera_Data=0x0000;
+  		osSemaphoreWait(CameraUARTSemHandle, 0);
   		Camera_Data=Camera_Data | (((uint16_t) (Rx_Buf[0]))<<8);
   		Camera_Data=Camera_Data|((uint16_t) (Rx_Buf[1]));
+  		osSemaphoreRelease(CameraUARTSemHandle);
   		//Data=Data & (0x07F0);
   		//HAL_UART_Transmit(&huart1, (uint8_t*) &Data,2,10);
   		//HAL_UART_AbortReceive_IT(&huart1);
   		Rx_Buf[0]=0;
   		Rx_Buf[1]=0;
   		//camera_ready_flag=1;
-  		osSemaphoreRelease(CameraUARTSemHandle);
   		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   		if(camera_recieve_IT_flag)
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
