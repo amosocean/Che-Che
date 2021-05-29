@@ -997,8 +997,8 @@ float PID_Line_Follow(float Accept_Error)
 			int32_t PID_Input=0;
 			int in_place_count=0;
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+			delay(200);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
-			delay(500);
 						  	 for(int i = 0;i<2;i++)
 						  	 {
 						  		 //osSemaphoreRelease(GyroReadySemHandle);
