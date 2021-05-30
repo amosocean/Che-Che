@@ -37,11 +37,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_macro  00022037  00000000  00000000  0003b8a0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00013adc  00000000  00000000  0005d8d7  2**0
+ 17 .debug_line   00013adb  00000000  00000000  0005d8d7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000d3235  00000000  00000000  000713b3  2**0
+ 18 .debug_str    000d3237  00000000  00000000  000713b2  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000053  00000000  00000000  001445e8  2**0
+ 19 .comment      00000053  00000000  00000000  001445e9  2**0
                   CONTENTS, READONLY
  20 .debug_frame  00004fe4  00000000  00000000  0014463c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -2986,7 +2986,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
  80019f4:	43340000 	.word	0x43340000
  80019f8:	43b40000 	.word	0x43b40000
  80019fc:	c3340000 	.word	0xc3340000
- 8001a00:	44610000 	.word	0x44610000
+ 8001a00:	447a0000 	.word	0x447a0000
  8001a04:	c4fa0000 	.word	0xc4fa0000
  8001a08:	c4fa0000 	.word	0xc4fa0000
 
@@ -3153,19 +3153,19 @@ void PID_Straight(void)
  8001b5e:	edd7 7a09 	vldr	s15, [r7, #36]	; 0x24
  8001b62:	eefd 7ae7 	vcvt.s32.f32	s15, s15
  8001b66:	ee17 3a90 	vmov	r3, s15
- 8001b6a:	f503 73c8 	add.w	r3, r3, #400	; 0x190
+ 8001b6a:	f503 63e1 	add.w	r3, r3, #1800	; 0x708
  8001b6e:	60bb      	str	r3, [r7, #8]
 					     pwm_left=	PWM_Mid-	(int32_t)  	PID_Output;
  8001b70:	edd7 7a09 	vldr	s15, [r7, #36]	; 0x24
  8001b74:	eefd 7ae7 	vcvt.s32.f32	s15, s15
  8001b78:	ee17 3a90 	vmov	r3, s15
- 8001b7c:	f5c3 73c8 	rsb	r3, r3, #400	; 0x190
+ 8001b7c:	f5c3 63e1 	rsb	r3, r3, #1800	; 0x708
  8001b80:	607b      	str	r3, [r7, #4]
 					     pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
  8001b82:	68bb      	ldr	r3, [r7, #8]
- 8001b84:	f5b3 7f61 	cmp.w	r3, #900	; 0x384
+ 8001b84:	f5b3 7f7a 	cmp.w	r3, #1000	; 0x3e8
  8001b88:	bfb8      	it	lt
- 8001b8a:	f44f 7361 	movlt.w	r3, #900	; 0x384
+ 8001b8a:	f44f 737a 	movlt.w	r3, #1000	; 0x3e8
  8001b8e:	60bb      	str	r3, [r7, #8]
 					     pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
  8001b90:	68bb      	ldr	r3, [r7, #8]
@@ -3175,9 +3175,9 @@ void PID_Straight(void)
  8001b9c:	60bb      	str	r3, [r7, #8]
 					     pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
  8001b9e:	687b      	ldr	r3, [r7, #4]
- 8001ba0:	f5b3 7f61 	cmp.w	r3, #900	; 0x384
+ 8001ba0:	f5b3 7f7a 	cmp.w	r3, #1000	; 0x3e8
  8001ba4:	bfb8      	it	lt
- 8001ba6:	f44f 7361 	movlt.w	r3, #900	; 0x384
+ 8001ba6:	f44f 737a 	movlt.w	r3, #1000	; 0x3e8
  8001baa:	607b      	str	r3, [r7, #4]
 					     pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
  8001bac:	687b      	ldr	r3, [r7, #4]
@@ -3238,7 +3238,7 @@ float PID_Line_Follow(float Accept_Error)
  8001c12:	2300      	movs	r3, #0
  8001c14:	837b      	strh	r3, [r7, #26]
 		    volatile float Kp = 3, Ki = 0, Kd =0;     // PID系数
- 8001c16:	4b75      	ldr	r3, [pc, #468]	; (8001dec <PID_Line_Follow+0x1e4>)
+ 8001c16:	4b74      	ldr	r3, [pc, #464]	; (8001de8 <PID_Line_Follow+0x1e0>)
  8001c18:	617b      	str	r3, [r7, #20]
  8001c1a:	f04f 0300 	mov.w	r3, #0
  8001c1e:	613b      	str	r3, [r7, #16]
@@ -3268,212 +3268,212 @@ float PID_Line_Follow(float Accept_Error)
  8001c4e:	61fb      	str	r3, [r7, #28]
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
  8001c50:	2202      	movs	r2, #2
- 8001c52:	4967      	ldr	r1, [pc, #412]	; (8001df0 <PID_Line_Follow+0x1e8>)
- 8001c54:	4867      	ldr	r0, [pc, #412]	; (8001df4 <PID_Line_Follow+0x1ec>)
+ 8001c52:	4966      	ldr	r1, [pc, #408]	; (8001dec <PID_Line_Follow+0x1e4>)
+ 8001c54:	4866      	ldr	r0, [pc, #408]	; (8001df0 <PID_Line_Follow+0x1e8>)
  8001c56:	f003 fce0 	bl	800561a <HAL_UART_Receive_IT>
-			delay(800);
- 8001c5a:	f44f 7048 	mov.w	r0, #800	; 0x320
- 8001c5e:	f7ff fcf7 	bl	8001650 <delay>
+			//delay(100);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
- 8001c62:	4b65      	ldr	r3, [pc, #404]	; (8001df8 <PID_Line_Follow+0x1f0>)
- 8001c64:	681b      	ldr	r3, [r3, #0]
- 8001c66:	f04f 31ff 	mov.w	r1, #4294967295
- 8001c6a:	4618      	mov	r0, r3
- 8001c6c:	f004 fb1e 	bl	80062ac <osSemaphoreWait>
-						  	 for(int i = 0;i<2;i++)
- 8001c70:	2300      	movs	r3, #0
- 8001c72:	637b      	str	r3, [r7, #52]	; 0x34
- 8001c74:	e011      	b.n	8001c9a <PID_Line_Follow+0x92>
+ 8001c5a:	4b66      	ldr	r3, [pc, #408]	; (8001df4 <PID_Line_Follow+0x1ec>)
+ 8001c5c:	681b      	ldr	r3, [r3, #0]
+ 8001c5e:	f04f 31ff 	mov.w	r1, #4294967295
+ 8001c62:	4618      	mov	r0, r3
+ 8001c64:	f004 fb22 	bl	80062ac <osSemaphoreWait>
+						  	 for(int i = 0;i<3;i++)
+ 8001c68:	2300      	movs	r3, #0
+ 8001c6a:	637b      	str	r3, [r7, #52]	; 0x34
+ 8001c6c:	e011      	b.n	8001c92 <PID_Line_Follow+0x8a>
 						  	 {
 						  		 //osSemaphoreRelease(GyroReadySemHandle);
 						  		osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
- 8001c76:	4b60      	ldr	r3, [pc, #384]	; (8001df8 <PID_Line_Follow+0x1f0>)
- 8001c78:	681b      	ldr	r3, [r3, #0]
- 8001c7a:	f04f 31ff 	mov.w	r1, #4294967295
- 8001c7e:	4618      	mov	r0, r3
- 8001c80:	f004 fb14 	bl	80062ac <osSemaphoreWait>
+ 8001c6e:	4b61      	ldr	r3, [pc, #388]	; (8001df4 <PID_Line_Follow+0x1ec>)
+ 8001c70:	681b      	ldr	r3, [r3, #0]
+ 8001c72:	f04f 31ff 	mov.w	r1, #4294967295
+ 8001c76:	4618      	mov	r0, r3
+ 8001c78:	f004 fb18 	bl	80062ac <osSemaphoreWait>
 						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
- 8001c84:	4b5d      	ldr	r3, [pc, #372]	; (8001dfc <PID_Line_Follow+0x1f4>)
- 8001c86:	881b      	ldrh	r3, [r3, #0]
- 8001c88:	b29b      	uxth	r3, r3
- 8001c8a:	f3c3 030a 	ubfx	r3, r3, #0, #11
- 8001c8e:	f5a3 737a 	sub.w	r3, r3, #1000	; 0x3e8
- 8001c92:	63bb      	str	r3, [r7, #56]	; 0x38
-						  	 for(int i = 0;i<2;i++)
- 8001c94:	6b7b      	ldr	r3, [r7, #52]	; 0x34
- 8001c96:	3301      	adds	r3, #1
- 8001c98:	637b      	str	r3, [r7, #52]	; 0x34
- 8001c9a:	6b7b      	ldr	r3, [r7, #52]	; 0x34
- 8001c9c:	2b01      	cmp	r3, #1
- 8001c9e:	ddea      	ble.n	8001c76 <PID_Line_Follow+0x6e>
+ 8001c7c:	4b5e      	ldr	r3, [pc, #376]	; (8001df8 <PID_Line_Follow+0x1f0>)
+ 8001c7e:	881b      	ldrh	r3, [r3, #0]
+ 8001c80:	b29b      	uxth	r3, r3
+ 8001c82:	f3c3 030a 	ubfx	r3, r3, #0, #11
+ 8001c86:	f5a3 737a 	sub.w	r3, r3, #1000	; 0x3e8
+ 8001c8a:	63bb      	str	r3, [r7, #56]	; 0x38
+						  	 for(int i = 0;i<3;i++)
+ 8001c8c:	6b7b      	ldr	r3, [r7, #52]	; 0x34
+ 8001c8e:	3301      	adds	r3, #1
+ 8001c90:	637b      	str	r3, [r7, #52]	; 0x34
+ 8001c92:	6b7b      	ldr	r3, [r7, #52]	; 0x34
+ 8001c94:	2b02      	cmp	r3, #2
+ 8001c96:	ddea      	ble.n	8001c6e <PID_Line_Follow+0x66>
 						  		 //osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  	 }
-						  	 PID_Input/=2;
- 8001ca0:	6bbb      	ldr	r3, [r7, #56]	; 0x38
- 8001ca2:	0fda      	lsrs	r2, r3, #31
- 8001ca4:	4413      	add	r3, r2
- 8001ca6:	105b      	asrs	r3, r3, #1
- 8001ca8:	63bb      	str	r3, [r7, #56]	; 0x38
+						  	 PID_Input/=3;
+ 8001c98:	6bbb      	ldr	r3, [r7, #56]	; 0x38
+ 8001c9a:	4a58      	ldr	r2, [pc, #352]	; (8001dfc <PID_Line_Follow+0x1f4>)
+ 8001c9c:	fb82 1203 	smull	r1, r2, r2, r3
+ 8001ca0:	17db      	asrs	r3, r3, #31
+ 8001ca2:	1ad3      	subs	r3, r2, r3
+ 8001ca4:	63bb      	str	r3, [r7, #56]	; 0x38
 			First_Error= PID_Target - PID_Input;
- 8001caa:	8b7b      	ldrh	r3, [r7, #26]
- 8001cac:	b29b      	uxth	r3, r3
- 8001cae:	461a      	mov	r2, r3
- 8001cb0:	6bbb      	ldr	r3, [r7, #56]	; 0x38
- 8001cb2:	1ad3      	subs	r3, r2, r3
- 8001cb4:	ee07 3a90 	vmov	s15, r3
- 8001cb8:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 8001cbc:	edc7 7a09 	vstr	s15, [r7, #36]	; 0x24
+ 8001ca6:	8b7b      	ldrh	r3, [r7, #26]
+ 8001ca8:	b29b      	uxth	r3, r3
+ 8001caa:	461a      	mov	r2, r3
+ 8001cac:	6bbb      	ldr	r3, [r7, #56]	; 0x38
+ 8001cae:	1ad3      	subs	r3, r2, r3
+ 8001cb0:	ee07 3a90 	vmov	s15, r3
+ 8001cb4:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8001cb8:	edc7 7a09 	vstr	s15, [r7, #36]	; 0x24
 			Error=PID_Target - PID_Input;
- 8001cc0:	8b7b      	ldrh	r3, [r7, #26]
- 8001cc2:	b29b      	uxth	r3, r3
- 8001cc4:	461a      	mov	r2, r3
- 8001cc6:	6bbb      	ldr	r3, [r7, #56]	; 0x38
- 8001cc8:	1ad3      	subs	r3, r2, r3
- 8001cca:	ee07 3a90 	vmov	s15, r3
- 8001cce:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 8001cd2:	edc7 7a0b 	vstr	s15, [r7, #44]	; 0x2c
+ 8001cbc:	8b7b      	ldrh	r3, [r7, #26]
+ 8001cbe:	b29b      	uxth	r3, r3
+ 8001cc0:	461a      	mov	r2, r3
+ 8001cc2:	6bbb      	ldr	r3, [r7, #56]	; 0x38
+ 8001cc4:	1ad3      	subs	r3, r2, r3
+ 8001cc6:	ee07 3a90 	vmov	s15, r3
+ 8001cca:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8001cce:	edc7 7a0b 	vstr	s15, [r7, #44]	; 0x2c
 //			  	 PID_Input = (Camera_Data & (0x07FF))-1000;
 			  	 //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 			  	 //delay(10);
 			  	 //Data=0x03E8;
 			  	 //PID_Input=-300;
 			  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
- 8001cd6:	8b7b      	ldrh	r3, [r7, #26]
- 8001cd8:	b29b      	uxth	r3, r3
- 8001cda:	461a      	mov	r2, r3
- 8001cdc:	6bbb      	ldr	r3, [r7, #56]	; 0x38
- 8001cde:	1ad3      	subs	r3, r2, r3
- 8001ce0:	ee07 3a90 	vmov	s15, r3
- 8001ce4:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 8001ce8:	edc7 7a0b 	vstr	s15, [r7, #44]	; 0x2c
+ 8001cd2:	8b7b      	ldrh	r3, [r7, #26]
+ 8001cd4:	b29b      	uxth	r3, r3
+ 8001cd6:	461a      	mov	r2, r3
+ 8001cd8:	6bbb      	ldr	r3, [r7, #56]	; 0x38
+ 8001cda:	1ad3      	subs	r3, r2, r3
+ 8001cdc:	ee07 3a90 	vmov	s15, r3
+ 8001ce0:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8001ce4:	edc7 7a0b 	vstr	s15, [r7, #44]	; 0x2c
 //			  	 if (Error < Accept_Error)
 //			  		in_place_count++;
 //			  	 else in_place_count=0;
 //			  	 if (in_place_count > 3)
 //			  		 return First_Error>=0?First_Error:(-First_Error);
 			  	 Error_Total=Error_Total+Ki*Error;
- 8001cec:	ed97 7a04 	vldr	s14, [r7, #16]
- 8001cf0:	edd7 7a0b 	vldr	s15, [r7, #44]	; 0x2c
- 8001cf4:	ee67 7a27 	vmul.f32	s15, s14, s15
- 8001cf8:	ed97 7a0a 	vldr	s14, [r7, #40]	; 0x28
- 8001cfc:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001d00:	edc7 7a0a 	vstr	s15, [r7, #40]	; 0x28
+ 8001ce8:	ed97 7a04 	vldr	s14, [r7, #16]
+ 8001cec:	edd7 7a0b 	vldr	s15, [r7, #44]	; 0x2c
+ 8001cf0:	ee67 7a27 	vmul.f32	s15, s14, s15
+ 8001cf4:	ed97 7a0a 	vldr	s14, [r7, #40]	; 0x28
+ 8001cf8:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8001cfc:	edc7 7a0a 	vstr	s15, [r7, #40]	; 0x28
 			  	 PID_Output = Kp * Error  +
- 8001d04:	ed97 7a05 	vldr	s14, [r7, #20]
- 8001d08:	edd7 7a0b 	vldr	s15, [r7, #44]	; 0x2c
- 8001d0c:	ee27 7a27 	vmul.f32	s14, s14, s15
+ 8001d00:	ed97 7a05 	vldr	s14, [r7, #20]
+ 8001d04:	edd7 7a0b 	vldr	s15, [r7, #44]	; 0x2c
+ 8001d08:	ee27 7a27 	vmul.f32	s14, s14, s15
 			  				  Kd * (Error - PID_Error_Last ) +
- 8001d10:	edd7 6a0b 	vldr	s13, [r7, #44]	; 0x2c
- 8001d14:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
- 8001d18:	ee76 6ae7 	vsub.f32	s13, s13, s15
- 8001d1c:	edd7 7a03 	vldr	s15, [r7, #12]
- 8001d20:	ee66 7aa7 	vmul.f32	s15, s13, s15
+ 8001d0c:	edd7 6a0b 	vldr	s13, [r7, #44]	; 0x2c
+ 8001d10:	edd7 7a0c 	vldr	s15, [r7, #48]	; 0x30
+ 8001d14:	ee76 6ae7 	vsub.f32	s13, s13, s15
+ 8001d18:	edd7 7a03 	vldr	s15, [r7, #12]
+ 8001d1c:	ee66 7aa7 	vmul.f32	s15, s13, s15
 			  	 PID_Output = Kp * Error  +
- 8001d24:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001d28:	ed97 7a0a 	vldr	s14, [r7, #40]	; 0x28
- 8001d2c:	ee77 7a27 	vadd.f32	s15, s14, s15
- 8001d30:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
+ 8001d20:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8001d24:	ed97 7a0a 	vldr	s14, [r7, #40]	; 0x28
+ 8001d28:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8001d2c:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
 			  				  Error_Total;
 			  	 PID_Error_Last = Error;
- 8001d34:	6afb      	ldr	r3, [r7, #44]	; 0x2c
- 8001d36:	633b      	str	r3, [r7, #48]	; 0x30
+ 8001d30:	6afb      	ldr	r3, [r7, #44]	; 0x2c
+ 8001d32:	633b      	str	r3, [r7, #48]	; 0x30
 //			  	 if(PID_Output < 0)
 //			  		 PID_Output-=PWM_Lowest;
 //			  	 else
 //			  		 PID_Output+=PWM_Lowest;
 			     if(PID_Output > MAX_TIME) 			PID_Output =	MAX_TIME;	    // 限幅
- 8001d38:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001d3c:	ed9f 7a30 	vldr	s14, [pc, #192]	; 8001e00 <PID_Line_Follow+0x1f8>
- 8001d40:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8001d44:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001d48:	dd02      	ble.n	8001d50 <PID_Line_Follow+0x148>
- 8001d4a:	4b2e      	ldr	r3, [pc, #184]	; (8001e04 <PID_Line_Follow+0x1fc>)
- 8001d4c:	63fb      	str	r3, [r7, #60]	; 0x3c
- 8001d4e:	e00a      	b.n	8001d66 <PID_Line_Follow+0x15e>
+ 8001d34:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001d38:	ed9f 7a31 	vldr	s14, [pc, #196]	; 8001e00 <PID_Line_Follow+0x1f8>
+ 8001d3c:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8001d40:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001d44:	dd02      	ble.n	8001d4c <PID_Line_Follow+0x144>
+ 8001d46:	4b2f      	ldr	r3, [pc, #188]	; (8001e04 <PID_Line_Follow+0x1fc>)
+ 8001d48:	63fb      	str	r3, [r7, #60]	; 0x3c
+ 8001d4a:	e00a      	b.n	8001d62 <PID_Line_Follow+0x15a>
 			     else if(PID_Output <-(MAX_TIME)) 	PID_Output = 	-MAX_TIME;
- 8001d50:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001d54:	ed9f 7a2c 	vldr	s14, [pc, #176]	; 8001e08 <PID_Line_Follow+0x200>
- 8001d58:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8001d5c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001d60:	d501      	bpl.n	8001d66 <PID_Line_Follow+0x15e>
- 8001d62:	4b2a      	ldr	r3, [pc, #168]	; (8001e0c <PID_Line_Follow+0x204>)
- 8001d64:	63fb      	str	r3, [r7, #60]	; 0x3c
+ 8001d4c:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001d50:	ed9f 7a2d 	vldr	s14, [pc, #180]	; 8001e08 <PID_Line_Follow+0x200>
+ 8001d54:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8001d58:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001d5c:	d501      	bpl.n	8001d62 <PID_Line_Follow+0x15a>
+ 8001d5e:	4b2b      	ldr	r3, [pc, #172]	; (8001e0c <PID_Line_Follow+0x204>)
+ 8001d60:	63fb      	str	r3, [r7, #60]	; 0x3c
 			     //taskENTER_CRITICAL();
 //			     PWM_SET_RIGHT ((int32_t) PID_Output);
 //			     PWM_SET_LEFT  ((int32_t) -PID_Output);
 			     if(PID_Output>0)
- 8001d66:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001d6a:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8001d6e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001d72:	dd0b      	ble.n	8001d8c <PID_Line_Follow+0x184>
+ 8001d62:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001d66:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8001d6a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001d6e:	dd0b      	ble.n	8001d88 <PID_Line_Follow+0x180>
 			     {
 			    	 taskENTER_CRITICAL();
- 8001d74:	f006 fc06 	bl	8008584 <vPortEnterCritical>
+ 8001d70:	f006 fc08 	bl	8008584 <vPortEnterCritical>
 			    	 PWM_SET_RIGHT (PWM_Lowest+200);
- 8001d78:	f240 404c 	movw	r0, #1100	; 0x44c
- 8001d7c:	f000 f9a4 	bl	80020c8 <PWM_SET_RIGHT>
+ 8001d74:	f44f 6096 	mov.w	r0, #1200	; 0x4b0
+ 8001d78:	f000 f9a6 	bl	80020c8 <PWM_SET_RIGHT>
 			    	 PWM_SET_LEFT  (-PWM_Lowest-200);
- 8001d80:	4823      	ldr	r0, [pc, #140]	; (8001e10 <PID_Line_Follow+0x208>)
- 8001d82:	f000 f969 	bl	8002058 <PWM_SET_LEFT>
+ 8001d7c:	4824      	ldr	r0, [pc, #144]	; (8001e10 <PID_Line_Follow+0x208>)
+ 8001d7e:	f000 f96b 	bl	8002058 <PWM_SET_LEFT>
 			    	 taskEXIT_CRITICAL();
- 8001d86:	f006 fc2d 	bl	80085e4 <vPortExitCritical>
- 8001d8a:	e00a      	b.n	8001da2 <PID_Line_Follow+0x19a>
+ 8001d82:	f006 fc2f 	bl	80085e4 <vPortExitCritical>
+ 8001d86:	e00a      	b.n	8001d9e <PID_Line_Follow+0x196>
 			     }
 			     else
 			     {
 			    	 taskENTER_CRITICAL();
- 8001d8c:	f006 fbfa 	bl	8008584 <vPortEnterCritical>
+ 8001d88:	f006 fbfc 	bl	8008584 <vPortEnterCritical>
 			    	 PWM_SET_RIGHT (-PWM_Lowest-200);
- 8001d90:	481f      	ldr	r0, [pc, #124]	; (8001e10 <PID_Line_Follow+0x208>)
- 8001d92:	f000 f999 	bl	80020c8 <PWM_SET_RIGHT>
+ 8001d8c:	4820      	ldr	r0, [pc, #128]	; (8001e10 <PID_Line_Follow+0x208>)
+ 8001d8e:	f000 f99b 	bl	80020c8 <PWM_SET_RIGHT>
 			    	 PWM_SET_LEFT  (PWM_Lowest+200);
- 8001d96:	f240 404c 	movw	r0, #1100	; 0x44c
- 8001d9a:	f000 f95d 	bl	8002058 <PWM_SET_LEFT>
+ 8001d92:	f44f 6096 	mov.w	r0, #1200	; 0x4b0
+ 8001d96:	f000 f95f 	bl	8002058 <PWM_SET_LEFT>
 			    	 taskEXIT_CRITICAL();
- 8001d9e:	f006 fc21 	bl	80085e4 <vPortExitCritical>
+ 8001d9a:	f006 fc23 	bl	80085e4 <vPortExitCritical>
 //			     else
 //			     {
 //			    	 bent_count--;
 //			     }
 
 			     PID_Output=PID_Output>0?PID_Output:-PID_Output;
- 8001da2:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001da6:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8001daa:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001dae:	dd02      	ble.n	8001db6 <PID_Line_Follow+0x1ae>
- 8001db0:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001db4:	e003      	b.n	8001dbe <PID_Line_Follow+0x1b6>
- 8001db6:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001dba:	eef1 7a67 	vneg.f32	s15, s15
- 8001dbe:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
+ 8001d9e:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001da2:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8001da6:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001daa:	dd02      	ble.n	8001db2 <PID_Line_Follow+0x1aa>
+ 8001dac:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001db0:	e003      	b.n	8001dba <PID_Line_Follow+0x1b2>
+ 8001db2:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001db6:	eef1 7a67 	vneg.f32	s15, s15
+ 8001dba:	edc7 7a0f 	vstr	s15, [r7, #60]	; 0x3c
 			     delay((uint32_t) PID_Output);
- 8001dc2:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
- 8001dc6:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 8001dca:	ee17 0a90 	vmov	r0, s15
- 8001dce:	f7ff fc3f 	bl	8001650 <delay>
+ 8001dbe:	edd7 7a0f 	vldr	s15, [r7, #60]	; 0x3c
+ 8001dc2:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8001dc6:	ee17 0a90 	vmov	r0, s15
+ 8001dca:	f7ff fc41 	bl	8001650 <delay>
 			     HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
- 8001dd2:	f44f 6180 	mov.w	r1, #1024	; 0x400
- 8001dd6:	480f      	ldr	r0, [pc, #60]	; (8001e14 <PID_Line_Follow+0x20c>)
- 8001dd8:	f001 fc4f 	bl	800367a <HAL_GPIO_TogglePin>
+ 8001dce:	f44f 6180 	mov.w	r1, #1024	; 0x400
+ 8001dd2:	4810      	ldr	r0, [pc, #64]	; (8001e14 <PID_Line_Follow+0x20c>)
+ 8001dd4:	f001 fc51 	bl	800367a <HAL_GPIO_TogglePin>
 //		  }
 			     return First_Error;
- 8001ddc:	6a7b      	ldr	r3, [r7, #36]	; 0x24
- 8001dde:	ee07 3a90 	vmov	s15, r3
+ 8001dd8:	6a7b      	ldr	r3, [r7, #36]	; 0x24
+ 8001dda:	ee07 3a90 	vmov	s15, r3
 }
- 8001de2:	eeb0 0a67 	vmov.f32	s0, s15
- 8001de6:	3740      	adds	r7, #64	; 0x40
- 8001de8:	46bd      	mov	sp, r7
- 8001dea:	bd80      	pop	{r7, pc}
- 8001dec:	40400000 	.word	0x40400000
- 8001df0:	20000288 	.word	0x20000288
- 8001df4:	20004220 	.word	0x20004220
- 8001df8:	200040e4 	.word	0x200040e4
- 8001dfc:	2000028a 	.word	0x2000028a
+ 8001dde:	eeb0 0a67 	vmov.f32	s0, s15
+ 8001de2:	3740      	adds	r7, #64	; 0x40
+ 8001de4:	46bd      	mov	sp, r7
+ 8001de6:	bd80      	pop	{r7, pc}
+ 8001de8:	40400000 	.word	0x40400000
+ 8001dec:	20000288 	.word	0x20000288
+ 8001df0:	20004220 	.word	0x20004220
+ 8001df4:	200040e4 	.word	0x200040e4
+ 8001df8:	2000028a 	.word	0x2000028a
+ 8001dfc:	55555556 	.word	0x55555556
  8001e00:	437a0000 	.word	0x437a0000
  8001e04:	437a0000 	.word	0x437a0000
  8001e08:	c37a0000 	.word	0xc37a0000
  8001e0c:	c37a0000 	.word	0xc37a0000
- 8001e10:	fffffbb4 	.word	0xfffffbb4
+ 8001e10:	fffffb50 	.word	0xfffffb50
  8001e14:	40021400 	.word	0x40021400
 
 08001e18 <Ultrasonic_Feedback>:
@@ -4155,10 +4155,10 @@ void StreamTask(void const * argument)
  8002268:	4618      	mov	r0, r3
  800226a:	f005 f9bd 	bl	80075e8 <vTaskResume>
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
- 800226e:	f44f 70c8 	mov.w	r0, #400	; 0x190
+ 800226e:	f44f 60e1 	mov.w	r0, #1800	; 0x708
  8002272:	f7ff fef1 	bl	8002058 <PWM_SET_LEFT>
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
- 8002276:	f44f 70c8 	mov.w	r0, #400	; 0x190
+ 8002276:	f44f 60e1 	mov.w	r0, #1800	; 0x708
  800227a:	f7ff ff25 	bl	80020c8 <PWM_SET_RIGHT>
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
  800227e:	4b27      	ldr	r3, [pc, #156]	; (800231c <StreamTask+0x1e4>)
@@ -4241,7 +4241,7 @@ void StreamTask(void const * argument)
  8002318:	43af0000 	.word	0x43af0000
  800231c:	20004004 	.word	0x20004004
  8002320:	20004008 	.word	0x20004008
- 8002324:	fffffc2c 	.word	0xfffffc2c
+ 8002324:	fffffbc8 	.word	0xfffffbc8
  8002328:	200041d4 	.word	0x200041d4
 
 0800232c <GyroReceiveTask>:
@@ -4811,7 +4811,7 @@ void LineSearchTask(void const * argument)
 	float pulse_increment_float=0;
  8002756:	f04f 0300 	mov.w	r3, #0
  800275a:	623b      	str	r3, [r7, #32]
-	float Kp=10,Ki=0,Kd=0;
+	float Kp=9,Ki=0,Kd=0;
  800275c:	4b4f      	ldr	r3, [pc, #316]	; (800289c <LineSearchTask+0x160>)
  800275e:	61fb      	str	r3, [r7, #28]
  8002760:	f04f 0300 	mov.w	r3, #0
@@ -4874,10 +4874,10 @@ void LineSearchTask(void const * argument)
 	  						  taskENTER_CRITICAL();
  80027c6:	f005 fedd 	bl	8008584 <vPortEnterCritical>
 	  					      PWM_SET_LEFT(PWM_Mid);
- 80027ca:	f44f 70c8 	mov.w	r0, #400	; 0x190
+ 80027ca:	f44f 60e1 	mov.w	r0, #1800	; 0x708
  80027ce:	f7ff fc43 	bl	8002058 <PWM_SET_LEFT>
 	  						  PWM_SET_RIGHT(PWM_Mid);
- 80027d2:	f44f 70c8 	mov.w	r0, #400	; 0x190
+ 80027d2:	f44f 60e1 	mov.w	r0, #1800	; 0x708
  80027d6:	f7ff fc77 	bl	80020c8 <PWM_SET_RIGHT>
 	  						  taskEXIT_CRITICAL();
  80027da:	f005 ff03 	bl	80085e4 <vPortExitCritical>
@@ -4903,7 +4903,7 @@ void LineSearchTask(void const * argument)
 
 	  		  	  	  		  else
 	  		  	  	  		  {
-	  		  	  	  			  pulse_increment_float=320-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+	  		  	  	  			  pulse_increment_float=300-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
  800280c:	edd7 7a09 	vldr	s15, [r7, #36]	; 0x24
  8002810:	eef5 7ac0 	vcmpe.f32	s15, #0.0
  8002814:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
@@ -4927,7 +4927,7 @@ void LineSearchTask(void const * argument)
  8002854:	ee77 7a27 	vadd.f32	s15, s14, s15
  8002858:	eefd 7ae7 	vcvt.s32.f32	s15, s15
  800285c:	ee17 3a90 	vmov	r3, s15
- 8002860:	f5c3 73a0 	rsb	r3, r3, #320	; 0x140
+ 8002860:	f5c3 7396 	rsb	r3, r3, #300	; 0x12c
  8002864:	ee07 3a90 	vmov	s15, r3
  8002868:	eef8 7ae7 	vcvt.f32.s32	s15, s15
  800286c:	edc7 7a08 	vstr	s15, [r7, #32]
@@ -4951,7 +4951,7 @@ void LineSearchTask(void const * argument)
 	  						  critical_pulses=0;
  8002898:	e77b      	b.n	8002792 <LineSearchTask+0x56>
  800289a:	bf00      	nop
- 800289c:	41200000 	.word	0x41200000
+ 800289c:	41100000 	.word	0x41100000
  80028a0:	200040e0 	.word	0x200040e0
  80028a4:	20004008 	.word	0x20004008
  80028a8:	20000288 	.word	0x20000288

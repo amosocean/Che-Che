@@ -57,8 +57,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 400  //无反馈时电机工作占空
-#define PWM_Lowest 900
+#define PWM_Mid 1800  //无反馈时电机工作占空
+#define PWM_Lowest 1000
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
@@ -998,16 +998,16 @@ float PID_Line_Follow(float Accept_Error)
 			int in_place_count=0;
 			int bent_count=0;
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-			delay(800);
+			//delay(100);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
-						  	 for(int i = 0;i<2;i++)
+						  	 for(int i = 0;i<3;i++)
 						  	 {
 						  		 //osSemaphoreRelease(GyroReadySemHandle);
 						  		osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  		 PID_Input = (Camera_Data & (0x07FF))-1000;
 						  		 //osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  	 }
-						  	 PID_Input/=2;
+						  	 PID_Input/=3;
 			First_Error= PID_Target - PID_Input;
 			Error=PID_Target - PID_Input;
 		  /* Infinite loop */
@@ -1554,7 +1554,7 @@ void LineSearchTask(void const * argument)
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
-	float Kp=10,Ki=0,Kd=0;
+	float Kp=9,Ki=0,Kd=0;
 	int Error_count=0;
 	int Boost_count=0;
 	vTaskSuspend(LineSearchHandle);
@@ -1602,7 +1602,7 @@ void LineSearchTask(void const * argument)
 
 	  		  	  	  		  else
 	  		  	  	  		  {
-	  		  	  	  			  pulse_increment_float=320-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+	  		  	  	  			  pulse_increment_float=300-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
 	  		  	  	  			  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
 	  		  	  	  			  Error_count=0;
 	  		  	  	  			  Boost_count=0;
