@@ -31,7 +31,7 @@
 /* USER CODE BEGIN PTD */
 typedef enum State {Initial=1,
 					Line_Search,
-					TurnRight,
+					TurnRight,TurnLeft,
 					GoStraight_Until_Barrier,
 					Go_Mile_1,Go_Line_Follow,
 					Mile_Adjust,
@@ -57,8 +57,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1600  //无反馈时电机工作占空
-#define PWM_Lowest 700
+#define PWM_Mid 400  //无反馈时电机工作占空
+#define PWM_Lowest 900
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
@@ -392,7 +392,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 61-1;
+  htim3.Init.Prescaler = 1001-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 2000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -451,7 +451,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 61-1;
+  htim4.Init.Prescaler = 901-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 2000;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -727,8 +727,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -988,16 +988,17 @@ void PID_Straight(void)
 
 float PID_Line_Follow(float Accept_Error)
 {
-#define MAX_TIME 400
+#define MAX_TIME 250
 			volatile uint16_t PID_Target=0;
-		    volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数
+		    volatile float Kp = 3, Ki = 0, Kd =0;     // PID系数
 			float PID_Error_Last=0;
 			float PID_Output=0;                    // PWM输出占空
 			float Error = 0, Error_Total=0,First_Error=0;
 			int32_t PID_Input=0;
 			int in_place_count=0;
+			int bent_count=0;
 			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-			delay(200);
+			delay(800);
 			osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
 						  	 for(int i = 0;i<2;i++)
 						  	 {
@@ -1053,6 +1054,24 @@ float PID_Line_Follow(float Accept_Error)
 			    	 taskEXIT_CRITICAL();
 			     }
 			     //taskEXIT_CRITICAL();
+//			     if(bent_count>5 || bent_count<-5)
+//			     {
+//			    	 Kp=1;
+//			    	 bent_count=0;
+//			     }
+//			     else
+//			     {
+//			    	 Kp=Kp;
+//			     }
+//			     if(PID_Output>50)
+//			     {
+//			    	 bent_count++;
+//			     }
+//			     else
+//			     {
+//			    	 bent_count--;
+//			     }
+
 			     PID_Output=PID_Output>0?PID_Output:-PID_Output;
 			     delay((uint32_t) PID_Output);
 			     HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
@@ -1535,7 +1554,7 @@ void LineSearchTask(void const * argument)
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
-	float Kp=7,Ki=0,Kd=0;
+	float Kp=10,Ki=0,Kd=0;
 	int Error_count=0;
 	int Boost_count=0;
 	vTaskSuspend(LineSearchHandle);
@@ -1560,7 +1579,7 @@ void LineSearchTask(void const * argument)
 	  		  	  	  		  Car_Stop();
 	  		  	  	  		  Error=PID_Line_Follow(10);
 	  		  	  	  		  Error_total+=Error;
-	  		  	  	  		  	  if(0/*Error<12*/)
+	  		  	  	  		  	  if(0)
 	  		  	  	  			  {	  Error_count++;
 //									  if(Boost_count>2)
 //										 {
@@ -1577,13 +1596,13 @@ void LineSearchTask(void const * argument)
 	  		  	  	  			  		  	  	  			  			  Boost_count++;
 	  		  	  	  			  		  	  	  			  			  continue;
 	  		  	  	  			  		  	  	  			  }
-									  pulse_increment_float=300-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+									  pulse_increment_float=350-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
 									  	  		  	  	  			  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
 	  		  	  	  			  }
 
 	  		  	  	  		  else
 	  		  	  	  		  {
-	  		  	  	  			  pulse_increment_float=500-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
+	  		  	  	  			  pulse_increment_float=320-((int32_t) (Kp*(Error>0?Error:-Error)+Ki*(Error_total>0?Error_total:-Error_total)));
 	  		  	  	  			  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
 	  		  	  	  			  Error_count=0;
 	  		  	  	  			  Boost_count=0;
