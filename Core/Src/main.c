@@ -951,7 +951,7 @@ void PID_Straight(float speed)
 				  {
 					  	 if (PID_Straight_Reset_Flag)
 					  		 return;
-		  	  	  	  	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green
+		  	  	  	  	 //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green
 					  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
 					  	 PID_Input = angle.z;
 					  	 Error=Angle_Diff(PID_target, PID_Input);
@@ -1034,9 +1034,13 @@ Distance Ultrasonic_Feedback(void)
 	uint8_t Rx_Buf[3]={0,0,0};
 	uint32_t Data=0x00000000;
 	Distance distance={0.0,0.0};
-	HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,100);
-	delay(100);
-	HAL_UART_Receive(&huart5,(uint8_t*) &Rx_Buf,3,300);
+	taskENTER_CRITICAL();
+	HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,10);
+	taskEXIT_CRITICAL();
+	delay(200);
+	taskENTER_CRITICAL();
+	HAL_UART_Receive(&huart5,(uint8_t*) &Rx_Buf,3,1);
+	taskEXIT_CRITICAL();
 	Data=Data | (((uint32_t) (Rx_Buf[0]))<<16);
 	Data=Data | (((uint32_t) (Rx_Buf[1]))<<8);
 	Data=Data |((uint32_t) (Rx_Buf[2]));
@@ -1255,12 +1259,16 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
 		  	  	  	  	  break;
 	  case Line_Search2:
-	  		  		  	  	  camera_recieve_IT_flag=1;
-	  		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-		  	  	  	  	  	  delay(2000);
-	  		  		  	  	  vTaskResume(LineSearch2Handle);
-	  		  		  	  	  osDelay(osWaitForever);
-	  		  	  	  	  	  break;
+		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
+		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
+		  	  	  	  	  vTaskSuspend(GoStraightHandle);
+		  		  	  	  delay(500);
+		  		  	  	  critical_distance.front=350;
+		  		  	  	  camera_recieve_IT_flag=1;
+		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+		  		  	  	  vTaskResume(LineSearch2Handle);
+		  		  	  	  delay(50000);
+		  	  	  	  	  break;
 	  case Go_Line_Follow:
 		  	  	  	  	  break;
 	  case Go_to_Bridge:
@@ -1272,6 +1280,7 @@ void StreamTask(void const * argument)
 						  delay(5000);
 		  	  	  	  	  break;
 	  case Cross_bridge:
+		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
@@ -1295,6 +1304,9 @@ void StreamTask(void const * argument)
 		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case TurnRight:
+		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
+		  		  	  	  vTaskSuspend(GoStraightHandle);
+		  		  	  	  vTaskSuspend(MileageHandle);
 	  	  	  	  	  	  Car_Stop();
 	  	  	  	  	  	  delay(50);
 	  	  	  	  	  	  distance_flag=0;
@@ -1305,6 +1317,9 @@ void StreamTask(void const * argument)
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
 	  case TurnRight2:
+		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
+		  	  	  	  	  vTaskSuspend(GoStraightHandle);
+		  	  	  	  	  vTaskSuspend(MileageHandle);
 						  Car_Stop();
 						  delay(50);
 						  distance_flag=0;
@@ -1327,6 +1342,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	  	  break;
 	  case Go_Mile_1:
+		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
 						  pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
@@ -1349,7 +1365,7 @@ void StreamTask(void const * argument)
 		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Go_Mile_2_Until_Barrier:
-		  	  	  	  	  critical_distance.front=550;
+		  	  	  	  	  critical_distance.front=250;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
@@ -1360,6 +1376,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, 0);
 		  	  	  		  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+		  	  	  		  //osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	      PID_Straight_Reset_Flag=1;
 		  	  	  	      vTaskSuspend(GoStraightHandle);
 		  	  	  		  Car_Stop();
@@ -1403,7 +1420,7 @@ void GyroReceiveTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+
 	  delay(100);
 	  uint8_t AxH=0, AxL=0;
 	  int16_t Ax=0;
@@ -1419,7 +1436,7 @@ void GyroReceiveTask(void const * argument)
 	  int h=0;
 	  uint8_t GyroData[21]={0};
 	  taskENTER_CRITICAL();
-	  HAL_UART_Receive(&huart3, (uint8_t *) &GyroData, sizeof(GyroData), 300);
+	  HAL_UART_Receive(&huart3, (uint8_t *) &GyroData, sizeof(GyroData), 50);
 	  taskEXIT_CRITICAL();
 	  while(h<14)
 	  {
@@ -1452,7 +1469,7 @@ void GyroReceiveTask(void const * argument)
 	  Ax=((((int16_t) AxH)<<8) | AxL);
 	  Ay=((((int16_t) AyH)<<8) | AyL);
 	  Yaw=((((int16_t) YawH)<<8) | YawL);
-
+	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 	  //taskENTER_CRITICAL();
 	  //HAL_UART_Transmit(&huart1, (uint8_t *) &Yaw, sizeof(Yaw), 0xFFFF);
 	  //taskEXIT_CRITICAL();
@@ -1672,7 +1689,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    	mileage_IT_number--;
 	   else
 	    	mileage_IT_number++;
-	   HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+	   //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   	}
   /* USER CODE END Callback 1 */
 }
