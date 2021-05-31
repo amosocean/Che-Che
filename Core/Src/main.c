@@ -33,7 +33,8 @@ typedef enum State {Initial=1,
 					Line_Search,Line_Search2,
 					TurnRight,TurnRight2,TurnLeft,
 					GoStraight_Until_Barrier,
-					Go_Mile_1,Go_Line_Follow,Go_to_Bridge,
+					Go_Mile_1,Go_Mile_2_Until_Barrier,Go_Line_Follow,Go_to_Bridge,
+					Cross_bridge,
 					Mile_Adjust,
 					Idle,
 					Unknow} State;
@@ -100,7 +101,7 @@ Distance current_distance={0,0};
 int distance_flag=0;
 int gyro_reset_flag=0;
 int camera_recieve_IT_flag=0;
-
+int go_straight_speed=PWM_Mid;
 //Encoder PV
 int32_t mileage_IT_number=-1;
 //uint8_t direction;
@@ -1108,7 +1109,10 @@ uint8_t State_Transition(State* current_state)
 				 	next_state = Line_Search2;
 					break;
 		case Go_to_Bridge:
-					next_state= TurnRight2;
+					next_state= Cross_bridge;
+					break;
+		case Cross_bridge:
+					next_state= Go_Mile_2_Until_Barrier;
 					break;
 		case GoStraight_Until_Barrier:
 					//osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
@@ -1127,6 +1131,9 @@ uint8_t State_Transition(State* current_state)
 //						next_state = Mile_Adjust;
 //						}
 					next_state=Go_to_Bridge;
+					break;
+		case Go_Mile_2_Until_Barrier:
+					next_state=TurnRight2;
 					break;
 		case Mile_Adjust:
 					switch (temp_state)
@@ -1264,6 +1271,29 @@ void StreamTask(void const * argument)
 						  taskEXIT_CRITICAL();
 						  delay(5000);
 		  	  	  	  	  break;
+	  case Cross_bridge:
+						  //pulse_incremnet=6900;//室内
+						  //pulse_incremnet=2400;//室外
+						  //pulse_incremnet=600; //小正方形
+		  	  	  	  	  pulse_incremnet=5400;//上下桥
+						  critical_pulses=0;
+						  vTaskResume(MileageHandle);
+						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+						  critical_pulses=pulse_incremnet+number_of_pulses;
+						  gyro_reset_flag=0;
+		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+		  	  	  	  	  PID_Straight_Reset_Flag=1;
+		  	  	  	  	  go_straight_speed=PWM_Mid+500;
+		  	  	  	  	  vTaskResume(GoStraightHandle);
+		  	  	  	  	  delay(200);
+		  	  	  	  	  PID_Straight_Reset_Flag=0;
+		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+		  	  	  	      PID_Straight_Reset_Flag=1;
+		  	  	  	      vTaskSuspend(GoStraightHandle);
+		  	  	  		  Car_Stop();
+		  	  	  		  gyro_reset_flag=1;
+		  	  	  		  //vTaskSuspend(MileageHandle);
+		  	  	  	  	  break;
 	  case TurnRight:
 	  	  	  	  	  	  Car_Stop();
 	  	  	  	  	  	  delay(50);
@@ -1307,10 +1337,29 @@ void StreamTask(void const * argument)
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
+		  	  	  	  	  go_straight_speed=PWM_Mid;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
 		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+		  	  	  	      PID_Straight_Reset_Flag=1;
+		  	  	  	      vTaskSuspend(GoStraightHandle);
+		  	  	  		  Car_Stop();
+		  	  	  		  gyro_reset_flag=1;
+		  	  	  		  //vTaskSuspend(MileageHandle);
+		  	  	  	  	  break;
+	  case Go_Mile_2_Until_Barrier:
+		  	  	  	  	  critical_distance.front=550;
+		  	  	  	  	  vTaskResume(DistanceCheckHandle);
+						  gyro_reset_flag=0;
+		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+		  	  	  	  	  PID_Straight_Reset_Flag=1;
+		  	  	  	  	  go_straight_speed=PWM_Mid;
+		  	  	  	  	  vTaskResume(GoStraightHandle);
+		  	  	  	  	  delay(1000);
+		  	  	  	  	  PID_Straight_Reset_Flag=0;
+		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, 0);
+		  	  	  		  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	      PID_Straight_Reset_Flag=1;
 		  	  	  	      vTaskSuspend(GoStraightHandle);
 		  	  	  		  Car_Stop();
@@ -1508,7 +1557,7 @@ void GoStraightTask(void const * argument)
   {
 	if (PID_Straight_Reset_Flag)
 		continue;
-	PID_Straight(PWM_Mid);
+	PID_Straight((float)go_straight_speed);
     delay(100);
   }
   /* USER CODE END GoStraightTask */
