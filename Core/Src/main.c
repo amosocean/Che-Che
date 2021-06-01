@@ -192,9 +192,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
-
-
-  //HAL_UART_Receive_IT(&huart5,(uint8_t*) &Rx_Buf_Sonic,3);
+  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -733,8 +731,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -817,7 +815,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 			uint8_t Flag=0; //Indicate that if verifying process begin.
 			Car_Stop();
 			//delay(1500);
-			for(int i=0;i<20;i++)			//Get average initial direction
+			for(int i=0;i<10;i++)			//Get average initial direction
 			{
 //				if(gyro_ready_flag)
 //				{
@@ -825,12 +823,11 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
 					//ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
 					initial_yaw+=angle.z;
-					delay(40);
 //				}
 //				else
 //					continue;
 			}
-			initial_yaw=initial_yaw/20;
+			initial_yaw=initial_yaw/10;
 			PID_target=initial_yaw + increment_angle;
 			if(PID_target > 180)
 				PID_target=-360+PID_target;
@@ -939,13 +936,13 @@ void PID_Straight(float speed)
 					if (PID_Straight_Reset_Flag)
 						return;
 					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
-					for(int i=0;i<20;i++)			//Get average initial direction
+					for(int i=0;i<10;i++)			//Get average initial direction
 					{
 							osSemaphoreWait(GyroReadySemHandle, osWaitForever);
 							initial_yaw+=angle.z;
 							delay(10);
 					}
-					initial_yaw=initial_yaw/20;
+					initial_yaw=initial_yaw/10;
 					PID_target=initial_yaw;
 				  for(;;)
 				  {
@@ -1053,7 +1050,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
   	if (huart->Instance==USART2){
   		Camera_Data=0x0000;
-  		osSemaphoreWait(CameraUARTSemHandle, 0);
+  		//osSemaphoreWait(CameraUARTSemHandle, 0);
   		Camera_Data=Camera_Data | (((uint16_t) (Rx_Buf[0]))<<8);
   		Camera_Data=Camera_Data|((uint16_t) (Rx_Buf[1]));
   		osSemaphoreRelease(CameraUARTSemHandle);
@@ -1063,27 +1060,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		Rx_Buf[0]=0;
   		Rx_Buf[1]=0;
   		//camera_ready_flag=1;
-  		//HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
-  		if(camera_recieve_IT_flag)
+  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+  		//if(camera_recieve_IT_flag)
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-  		/*if (Rx_Cnt>20)
-  			Rx_Cnt=0;*/
   	}
-//  	else if (huart->Instance==UART5){
-//  			uint8_t info=0xA0;
-//  			uint32_t Data=0x00000000;
-//
-//  			Data=Data | (((uint32_t) (Rx_Buf_Sonic[0]))<<16);
-//  			Data=Data | (((uint32_t) (Rx_Buf_Sonic[1]))<<8);
-//  			Data=Data |((uint32_t) (Rx_Buf_Sonic[2]));
-//  			HAL_UART_Transmit(&huart1, (uint8_t *) &Data, sizeof(Data), 0xFFFF);
-//  			distance.front=Data/1000;
-//  			Rx_Buf_Sonic[0]=0;
-//  			Rx_Buf_Sonic[1]=0;
-//  			Rx_Buf_Sonic[2]=0;
-//  			HAL_UART_Receive_IT(&huart5,(uint8_t*) &Rx_Buf_Sonic,3);
-//  			HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
-//  		}
   }
 
 uint8_t State_Transition(State* current_state)
@@ -1246,12 +1226,13 @@ void StreamTask(void const * argument)
 		  	  	  	  	  Car_Initial();
 		  	  	  	  	  break;
 	  case Line_Search:
-		  		  	  	  delay(500);
-		  		  	  	  critical_distance.front=350;
-		  		  	  	  camera_recieve_IT_flag=1;
-		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-		  		  	  	  vTaskResume(LineSearchHandle);
+	  	  	  	  	  	  critical_distance.front=350;
+		  		  	  	  vTaskResume(MileageHandle);
 		  		  	  	  vTaskResume(DistanceCheckHandle);
+		  		  	  	  delay(1500);
+		  		  	  	  vTaskResume(LineSearchHandle);
+		  		  	  	  delay(2000);
+		  		  	  	  //delay(300000);
 		  		  	  	  osSemaphoreWait(CriticalDistanceSemHandle, 0);
 		  		  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  		  	  	  vTaskDelete(LineSearchHandle);
@@ -1262,10 +1243,9 @@ void StreamTask(void const * argument)
 		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
 		  	  	  	  	  vTaskSuspend(GoStraightHandle);
+		  	  	  	  	  vTaskResume(MileageHandle);
 		  		  	  	  delay(500);
 		  		  	  	  critical_distance.front=350;
-		  		  	  	  camera_recieve_IT_flag=1;
-		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  		  	  	  vTaskResume(LineSearch2Handle);
 		  		  	  	  delay(50000);
 		  	  	  	  	  break;
@@ -1284,9 +1264,10 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=6900;//室内
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
-		  	  	  	  	  pulse_incremnet=5400;//上下桥
+		  	  	  	  	  pulse_incremnet=5400;//上下�?
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
+						  delay(100);
 						  osSemaphoreWait(MileageSemHandle, osWaitForever);
 						  critical_pulses=pulse_incremnet+number_of_pulses;
 						  gyro_reset_flag=0;
@@ -1312,6 +1293,7 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  distance_flag=0;
 	  	  	  	  	  	  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+		  	  	  	  	  delay(500);
 		  	  	  	  	  PID_Turning(-90,5);
 		  	  	  	  	  gyro_reset_flag=1;
 		  	  	  	  	  Car_Stop();
@@ -1325,6 +1307,7 @@ void StreamTask(void const * argument)
 						  distance_flag=0;
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
+						  delay(500);
 						  PID_Turning(-90,5);
 						  gyro_reset_flag=1;
 						  Car_Stop();
@@ -1346,12 +1329,13 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=6900;//室内
 						  pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+						  critical_pulses=0;
+						  vTaskResume(MileageHandle);
+						  delay(500);
+						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+						  critical_pulses=pulse_incremnet+number_of_pulses;
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
 		  	  	  	  	  go_straight_speed=PWM_Mid;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
@@ -1369,10 +1353,11 @@ void StreamTask(void const * argument)
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
+		  	  	  	  	  delay(500);
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
 		  	  	  	  	  go_straight_speed=PWM_Mid;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(1000);
+		  	  	  	  	  delay(500);
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, 0);
 		  	  	  		  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
@@ -1469,7 +1454,7 @@ void GyroReceiveTask(void const * argument)
 	  Ax=((((int16_t) AxH)<<8) | AxL);
 	  Ay=((((int16_t) AyH)<<8) | AyL);
 	  Yaw=((((int16_t) YawH)<<8) | YawL);
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+	  //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 	  //taskENTER_CRITICAL();
 	  //HAL_UART_Transmit(&huart1, (uint8_t *) &Yaw, sizeof(Yaw), 0xFFFF);
 	  //taskEXIT_CRITICAL();
@@ -1552,6 +1537,7 @@ void MileageTask(void const * argument)
 	  else
 		  osSemaphoreRelease(MileageNegSemHandle);
 	  delay(50);
+	  //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 	  //HAL_Delay(1000);
 	  //osDelay(1);
   }
@@ -1597,7 +1583,7 @@ void LineSearchTask(void const * argument)
 	float Kp=9;//,Ki=0,Kd=0;
 	vTaskSuspend(LineSearchHandle);
 	vTaskResume(MileageHandle);
-	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+	//HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   /* Infinite loop */
   for(;;)
   {
@@ -1640,7 +1626,7 @@ void LineSearch2Task(void const * argument)
 		vTaskSuspend(LineSearch2Handle);
 		int32_t pulse_increment=300;
 		vTaskResume(MileageHandle);
-		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+		//HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 	  /* Infinite loop */
 	  for(;;)
 	  {
