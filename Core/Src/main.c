@@ -733,8 +733,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -1035,7 +1035,7 @@ Distance Ultrasonic_Feedback(void)
 	uint32_t Data=0x00000000;
 	Distance distance={0.0,0.0};
 	taskENTER_CRITICAL();
-	HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,10);
+	HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,0xFFFF);
 	taskEXIT_CRITICAL();
 	delay(200);
 	taskENTER_CRITICAL();
@@ -1058,33 +1058,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		Camera_Data=Camera_Data|((uint16_t) (Rx_Buf[1]));
   		osSemaphoreRelease(CameraUARTSemHandle);
   		//Data=Data & (0x07F0);
-  		//HAL_UART_Transmit(&huart1, (uint8_t*) &Data,2,10);
+  		HAL_UART_Transmit(&huart1, (uint8_t*) &Camera_Data,2,10);
   		//HAL_UART_AbortReceive_IT(&huart1);
   		Rx_Buf[0]=0;
   		Rx_Buf[1]=0;
   		//camera_ready_flag=1;
-  		//HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
-  		if(camera_recieve_IT_flag)
+  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+  		//if(camera_recieve_IT_flag)
   		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-  		/*if (Rx_Cnt>20)
-  			Rx_Cnt=0;*/
-  	}
-//  	else if (huart->Instance==UART5){
-//  			uint8_t info=0xA0;
-//  			uint32_t Data=0x00000000;
-//
-//  			Data=Data | (((uint32_t) (Rx_Buf_Sonic[0]))<<16);
-//  			Data=Data | (((uint32_t) (Rx_Buf_Sonic[1]))<<8);
-//  			Data=Data |((uint32_t) (Rx_Buf_Sonic[2]));
-//  			HAL_UART_Transmit(&huart1, (uint8_t *) &Data, sizeof(Data), 0xFFFF);
-//  			distance.front=Data/1000;
-//  			Rx_Buf_Sonic[0]=0;
-//  			Rx_Buf_Sonic[1]=0;
-//  			Rx_Buf_Sonic[2]=0;
-//  			HAL_UART_Receive_IT(&huart5,(uint8_t*) &Rx_Buf_Sonic,3);
-//  			HAL_UART_Transmit(&huart5,(uint8_t*) &info,1,1000);
-//  		}
+  		}
   }
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+	__HAL_UART_CLEAR_OREFLAG(&huart2);
+	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+}
 
 uint8_t State_Transition(State* current_state)
 {
@@ -1247,7 +1236,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case Line_Search:
 		  		  	  	  delay(500);
-		  		  	  	  critical_distance.front=350;
+		  		  	  	  critical_distance.front=150;
 		  		  	  	  camera_recieve_IT_flag=1;
 		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  		  	  	  vTaskResume(LineSearchHandle);
@@ -1284,7 +1273,7 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=6900;//室内
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
-		  	  	  	  	  pulse_incremnet=5400;//上下桥
+		  	  	  	  	  pulse_incremnet=5400;//上下�??
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  osSemaphoreWait(MileageSemHandle, osWaitForever);
@@ -1469,7 +1458,7 @@ void GyroReceiveTask(void const * argument)
 	  Ax=((((int16_t) AxH)<<8) | AxL);
 	  Ay=((((int16_t) AyH)<<8) | AyL);
 	  Yaw=((((int16_t) YawH)<<8) | YawL);
-	  HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+	  //HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 	  //taskENTER_CRITICAL();
 	  //HAL_UART_Transmit(&huart1, (uint8_t *) &Yaw, sizeof(Yaw), 0xFFFF);
 	  //taskEXIT_CRITICAL();
