@@ -87,6 +87,7 @@ osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
 osSemaphoreId MileageSemHandle;
 osSemaphoreId MileageNegSemHandle;
+osSemaphoreId ApriltagSemHandle;
 /* USER CODE BEGIN PV */
 State state;
 State temp_state;
@@ -219,6 +220,10 @@ int main(void)
   /* definition and creation of MileageNegSem */
   osSemaphoreDef(MileageNegSem);
   MileageNegSemHandle = osSemaphoreCreate(osSemaphore(MileageNegSem), 1);
+
+  /* definition and creation of ApriltagSem */
+  osSemaphoreDef(ApriltagSem);
+  ApriltagSemHandle = osSemaphoreCreate(osSemaphore(ApriltagSem), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -731,8 +736,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -1053,16 +1058,34 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		//osSemaphoreWait(CameraUARTSemHandle, 0);
   		Camera_Data=Camera_Data | (((uint16_t) (Rx_Buf[0]))<<8);
   		Camera_Data=Camera_Data|((uint16_t) (Rx_Buf[1]));
-  		osSemaphoreRelease(CameraUARTSemHandle);
-  		//Data=Data & (0x07F0);
-  		HAL_UART_Transmit(&huart1, (uint8_t*) &Camera_Data,2,10);
-  		//HAL_UART_AbortReceive_IT(&huart1);
-  		Rx_Buf[0]=0;
-  		Rx_Buf[1]=0;
-  		//camera_ready_flag=1;
-  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
-  		//if(camera_recieve_IT_flag)
-  		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+  		if((Camera_Data & 0xF800) == 0)
+  		{
+  					osSemaphoreRelease(CameraUARTSemHandle);
+  			  		//Data=Data & (0x07F0);
+  			  		//HAL_UART_Transmit(&huart1, (uint8_t*) &Camera_Data,2,10);
+  			  		//HAL_UART_AbortReceive_IT(&huart1);
+  			  		Rx_Buf[0]=0;
+  			  		Rx_Buf[1]=0;
+  			  		//camera_ready_flag=1;
+  			  		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+  			  		//if(camera_recieve_IT_flag)
+  			  		HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+  		}
+  		else
+  		{
+  			switch (Camera_Data & 0xF800)
+  			{
+  			case 0x0800://first five bits 00001
+  				osSemaphoreRelease(ApriltagSemHandle);
+  				break;
+  			default:
+  				break;
+  			}
+  			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+  			Rx_Buf[0]=0;
+  			Rx_Buf[1]=0;
+  		}
+
   	}
   }
 
@@ -1238,7 +1261,7 @@ void StreamTask(void const * argument)
 		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  		  	  	  vTaskResume(MileageHandle);
 		  		  	  	  vTaskResume(LineSearchHandle);
-		  		  	  	  vTaskResume(DistanceCheckHandle);
+		  		  	  	  //vTaskResume(DistanceCheckHandle);
 		  		  	  	  delay(1500);
 		  		  	  	  vTaskResume(LineSearchHandle);
 		  		  	  	  delay(2000);
@@ -1275,7 +1298,7 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
 
-		  	  	  	  	  pulse_incremnet=5400;//上下�??
+		  	  	  	  	  pulse_incremnet=5400;//上下�???
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
