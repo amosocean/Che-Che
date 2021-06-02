@@ -2323,7 +2323,7 @@ Disassembly of section .text:
  8001a38:	43340000 	.word	0x43340000
  8001a3c:	43b40000 	.word	0x43b40000
  8001a40:	c3340000 	.word	0xc3340000
- 8001a44:	43f00000 	.word	0x43f00000
+ 8001a44:	442f0000 	.word	0x442f0000
  8001a48:	c4bb8000 	.word	0xc4bb8000
  8001a4c:	c4bb8000 	.word	0xc4bb8000
 
@@ -2456,9 +2456,9 @@ Disassembly of section .text:
  8001bd2:	ee17 3a90 	vmov	r3, s15
  8001bd6:	60fb      	str	r3, [r7, #12]
  8001bd8:	693b      	ldr	r3, [r7, #16]
- 8001bda:	f5b3 7ff0 	cmp.w	r3, #480	; 0x1e0
+ 8001bda:	f5b3 7f2f 	cmp.w	r3, #700	; 0x2bc
  8001bde:	bfb8      	it	lt
- 8001be0:	f44f 73f0 	movlt.w	r3, #480	; 0x1e0
+ 8001be0:	f44f 732f 	movlt.w	r3, #700	; 0x2bc
  8001be4:	613b      	str	r3, [r7, #16]
  8001be6:	693b      	ldr	r3, [r7, #16]
  8001be8:	f240 52dc 	movw	r2, #1500	; 0x5dc
@@ -2467,9 +2467,9 @@ Disassembly of section .text:
  8001bf0:	4613      	movge	r3, r2
  8001bf2:	613b      	str	r3, [r7, #16]
  8001bf4:	68fb      	ldr	r3, [r7, #12]
- 8001bf6:	f5b3 7ff0 	cmp.w	r3, #480	; 0x1e0
+ 8001bf6:	f5b3 7f2f 	cmp.w	r3, #700	; 0x2bc
  8001bfa:	bfb8      	it	lt
- 8001bfc:	f44f 73f0 	movlt.w	r3, #480	; 0x1e0
+ 8001bfc:	f44f 732f 	movlt.w	r3, #700	; 0x2bc
  8001c00:	60fb      	str	r3, [r7, #12]
  8001c02:	68fb      	ldr	r3, [r7, #12]
  8001c04:	f240 52dc 	movw	r2, #1500	; 0x5dc
@@ -2627,39 +2627,40 @@ Disassembly of section .text:
  8001dae:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
  8001db2:	eef5 7ac0 	vcmpe.f32	s15, #0.0
  8001db6:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001dba:	dd0c      	ble.n	8001dd6 <PID_Line_Follow+0x17a>
+ 8001dba:	dd0b      	ble.n	8001dd4 <PID_Line_Follow+0x178>
  8001dbc:	f005 f96a 	bl	8007094 <vPortEnterCritical>
- 8001dc0:	f240 409c 	movw	r0, #1180	; 0x49c
+ 8001dc0:	f44f 60af 	mov.w	r0, #1400	; 0x578
  8001dc4:	f000 fb20 	bl	8002408 <PWM_SET_RIGHT>
- 8001dc8:	f06f 00db 	mvn.w	r0, #219	; 0xdb
- 8001dcc:	f000 fae4 	bl	8002398 <PWM_SET_LEFT>
- 8001dd0:	f005 f982 	bl	80070d8 <vPortExitCritical>
- 8001dd4:	e00a      	b.n	8001dec <PID_Line_Follow+0x190>
- 8001dd6:	f005 f95d 	bl	8007094 <vPortEnterCritical>
- 8001dda:	481e      	ldr	r0, [pc, #120]	; (8001e54 <PID_Line_Follow+0x1f8>)
- 8001ddc:	f000 fb14 	bl	8002408 <PWM_SET_RIGHT>
- 8001de0:	f240 409c 	movw	r0, #1180	; 0x49c
- 8001de4:	f000 fad8 	bl	8002398 <PWM_SET_LEFT>
- 8001de8:	f005 f976 	bl	80070d8 <vPortExitCritical>
- 8001dec:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
- 8001df0:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8001df4:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001df8:	dd02      	ble.n	8001e00 <PID_Line_Follow+0x1a4>
- 8001dfa:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
- 8001dfe:	e003      	b.n	8001e08 <PID_Line_Follow+0x1ac>
- 8001e00:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
- 8001e04:	eef1 7a67 	vneg.f32	s15, s15
- 8001e08:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
- 8001e0c:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
- 8001e10:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 8001e14:	ee17 0a90 	vmov	r0, s15
- 8001e18:	f7ff fc3e 	bl	8001698 <delay>
- 8001e1c:	69fb      	ldr	r3, [r7, #28]
- 8001e1e:	ee07 3a90 	vmov	s15, r3
- 8001e22:	eeb0 0a67 	vmov.f32	s0, s15
- 8001e26:	3738      	adds	r7, #56	; 0x38
- 8001e28:	46bd      	mov	sp, r7
- 8001e2a:	bd80      	pop	{r7, pc}
+ 8001dc8:	2000      	movs	r0, #0
+ 8001dca:	f000 fae5 	bl	8002398 <PWM_SET_LEFT>
+ 8001dce:	f005 f983 	bl	80070d8 <vPortExitCritical>
+ 8001dd2:	e00a      	b.n	8001dea <PID_Line_Follow+0x18e>
+ 8001dd4:	f005 f95e 	bl	8007094 <vPortEnterCritical>
+ 8001dd8:	481e      	ldr	r0, [pc, #120]	; (8001e54 <PID_Line_Follow+0x1f8>)
+ 8001dda:	f000 fb15 	bl	8002408 <PWM_SET_RIGHT>
+ 8001dde:	f44f 60af 	mov.w	r0, #1400	; 0x578
+ 8001de2:	f000 fad9 	bl	8002398 <PWM_SET_LEFT>
+ 8001de6:	f005 f977 	bl	80070d8 <vPortExitCritical>
+ 8001dea:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
+ 8001dee:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8001df2:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001df6:	dd02      	ble.n	8001dfe <PID_Line_Follow+0x1a2>
+ 8001df8:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
+ 8001dfc:	e003      	b.n	8001e06 <PID_Line_Follow+0x1aa>
+ 8001dfe:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
+ 8001e02:	eef1 7a67 	vneg.f32	s15, s15
+ 8001e06:	edc7 7a0d 	vstr	s15, [r7, #52]	; 0x34
+ 8001e0a:	edd7 7a0d 	vldr	s15, [r7, #52]	; 0x34
+ 8001e0e:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8001e12:	ee17 0a90 	vmov	r0, s15
+ 8001e16:	f7ff fc3f 	bl	8001698 <delay>
+ 8001e1a:	69fb      	ldr	r3, [r7, #28]
+ 8001e1c:	ee07 3a90 	vmov	s15, r3
+ 8001e20:	eeb0 0a67 	vmov.f32	s0, s15
+ 8001e24:	3738      	adds	r7, #56	; 0x38
+ 8001e26:	46bd      	mov	sp, r7
+ 8001e28:	bd80      	pop	{r7, pc}
+ 8001e2a:	bf00      	nop
  8001e2c:	40400000 	.word	0x40400000
  8001e30:	2000028c 	.word	0x2000028c
  8001e34:	20004228 	.word	0x20004228
@@ -2670,7 +2671,7 @@ Disassembly of section .text:
  8001e48:	437a0000 	.word	0x437a0000
  8001e4c:	c37a0000 	.word	0xc37a0000
  8001e50:	c37a0000 	.word	0xc37a0000
- 8001e54:	fffffb64 	.word	0xfffffb64
+ 8001e54:	fffffa88 	.word	0xfffffa88
 
 08001e58 <PID_Apriltag>:
  8001e58:	b580      	push	{r7, lr}
@@ -2855,7 +2856,7 @@ Disassembly of section .text:
  8002088:	200041d8 	.word	0x200041d8
  800208c:	200040e4 	.word	0x200040e4
  8002090:	2000028e 	.word	0x2000028e
- 8002094:	43f00000 	.word	0x43f00000
+ 8002094:	442f0000 	.word	0x442f0000
  8002098:	c4bb8000 	.word	0xc4bb8000
  800209c:	c4bb8000 	.word	0xc4bb8000
 
@@ -3096,7 +3097,7 @@ Disassembly of section .text:
  80022e4:	0800231b 	.word	0x0800231b
  80022e8:	08002347 	.word	0x08002347
  80022ec:	0800235d 	.word	0x0800235d
- 80022f0:	2302      	movs	r3, #2
+ 80022f0:	230d      	movs	r3, #13
  80022f2:	73fb      	strb	r3, [r7, #15]
  80022f4:	e038      	b.n	8002368 <State_Transition+0xd0>
  80022f6:	230f      	movs	r3, #15
@@ -3399,9 +3400,9 @@ Disassembly of section .text:
  80025d0:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
  80025d4:	f7ff f860 	bl	8001698 <delay>
  80025d8:	f004 fd5c 	bl	8007094 <vPortEnterCritical>
- 80025dc:	f44f 7011 	mov.w	r0, #580	; 0x244
+ 80025dc:	f44f 7048 	mov.w	r0, #800	; 0x320
  80025e0:	f7ff ff12 	bl	8002408 <PWM_SET_RIGHT>
- 80025e4:	f44f 7011 	mov.w	r0, #580	; 0x244
+ 80025e4:	f44f 7048 	mov.w	r0, #800	; 0x320
  80025e8:	f7ff fed6 	bl	8002398 <PWM_SET_LEFT>
  80025ec:	f004 fd74 	bl	80070d8 <vPortExitCritical>
  80025f0:	f241 3088 	movw	r0, #5000	; 0x1388
@@ -3446,7 +3447,7 @@ Disassembly of section .text:
  8002650:	2201      	movs	r2, #1
  8002652:	601a      	str	r2, [r3, #0]
  8002654:	4b63      	ldr	r3, [pc, #396]	; (80027e4 <StreamTask+0x36c>)
- 8002656:	f240 52dc 	movw	r2, #1500	; 0x5dc
+ 8002656:	f44f 727a 	mov.w	r2, #1000	; 0x3e8
  800265a:	601a      	str	r2, [r3, #0]
  800265c:	4b59      	ldr	r3, [pc, #356]	; (80027c4 <StreamTask+0x34c>)
  800265e:	681b      	ldr	r3, [r3, #0]
@@ -3557,9 +3558,9 @@ Disassembly of section .text:
  8002772:	681b      	ldr	r3, [r3, #0]
  8002774:	4618      	mov	r0, r3
  8002776:	f004 f8cd 	bl	8006914 <vTaskResume>
- 800277a:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 800277a:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  800277e:	f7ff fe0b 	bl	8002398 <PWM_SET_LEFT>
- 8002782:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 8002782:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  8002786:	f7ff fe3f 	bl	8002408 <PWM_SET_RIGHT>
  800278a:	4b19      	ldr	r3, [pc, #100]	; (80027f0 <StreamTask+0x378>)
  800278c:	681b      	ldr	r3, [r3, #0]
@@ -3629,7 +3630,7 @@ Disassembly of section .text:
  800284c:	2201      	movs	r2, #1
  800284e:	601a      	str	r2, [r3, #0]
  8002850:	4b84      	ldr	r3, [pc, #528]	; (8002a64 <StreamTask+0x5ec>)
- 8002852:	f44f 727a 	mov.w	r2, #1000	; 0x3e8
+ 8002852:	f44f 62fa 	mov.w	r2, #2000	; 0x7d0
  8002856:	601a      	str	r2, [r3, #0]
  8002858:	4b83      	ldr	r3, [pc, #524]	; (8002a68 <StreamTask+0x5f0>)
  800285a:	681b      	ldr	r3, [r3, #0]
@@ -3677,7 +3678,7 @@ Disassembly of section .text:
  80028c2:	2201      	movs	r2, #1
  80028c4:	601a      	str	r2, [r3, #0]
  80028c6:	4b67      	ldr	r3, [pc, #412]	; (8002a64 <StreamTask+0x5ec>)
- 80028c8:	f44f 727a 	mov.w	r2, #1000	; 0x3e8
+ 80028c8:	f44f 62fa 	mov.w	r2, #2000	; 0x7d0
  80028cc:	601a      	str	r2, [r3, #0]
  80028ce:	4b66      	ldr	r3, [pc, #408]	; (8002a68 <StreamTask+0x5f0>)
  80028d0:	681b      	ldr	r3, [r3, #0]
@@ -3727,7 +3728,7 @@ Disassembly of section .text:
  8002940:	2201      	movs	r2, #1
  8002942:	601a      	str	r2, [r3, #0]
  8002944:	4b47      	ldr	r3, [pc, #284]	; (8002a64 <StreamTask+0x5ec>)
- 8002946:	f44f 7248 	mov.w	r2, #800	; 0x320
+ 8002946:	f44f 62e1 	mov.w	r2, #1800	; 0x708
  800294a:	601a      	str	r2, [r3, #0]
  800294c:	4b46      	ldr	r3, [pc, #280]	; (8002a68 <StreamTask+0x5f0>)
  800294e:	681b      	ldr	r3, [r3, #0]
@@ -3837,7 +3838,7 @@ Disassembly of section .text:
  8002a70:	437a0000 	.word	0x437a0000
  8002a74:	20004004 	.word	0x20004004
  8002a78:	200041d8 	.word	0x200041d8
- 8002a7c:	fffffdd0 	.word	0xfffffdd0
+ 8002a7c:	fffffcf4 	.word	0xfffffcf4
  8002a80:	200041dc 	.word	0x200041dc
  8002a84:	200002a4 	.word	0x200002a4
 
@@ -4299,9 +4300,9 @@ Disassembly of section .text:
  8002f38:	4618      	mov	r0, r3
  8002f3a:	f002 fa13 	bl	8005364 <osSemaphoreWait>
  8002f3e:	f004 f8a9 	bl	8007094 <vPortEnterCritical>
- 8002f42:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 8002f42:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  8002f46:	f7ff fa27 	bl	8002398 <PWM_SET_LEFT>
- 8002f4a:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 8002f4a:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  8002f4e:	f7ff fa5b 	bl	8002408 <PWM_SET_RIGHT>
  8002f52:	f004 f8c1 	bl	80070d8 <vPortExitCritical>
  8002f56:	4b2a      	ldr	r3, [pc, #168]	; (8003000 <LineSearchTask+0x12c>)
@@ -4401,9 +4402,9 @@ Disassembly of section .text:
  8003068:	4618      	mov	r0, r3
  800306a:	f002 f97b 	bl	8005364 <osSemaphoreWait>
  800306e:	f004 f811 	bl	8007094 <vPortEnterCritical>
- 8003072:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 8003072:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  8003076:	f7ff f98f 	bl	8002398 <PWM_SET_LEFT>
- 800307a:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 800307a:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  800307e:	f7ff f9c3 	bl	8002408 <PWM_SET_RIGHT>
  8003082:	f004 f829 	bl	80070d8 <vPortExitCritical>
  8003086:	4b2a      	ldr	r3, [pc, #168]	; (8003130 <LineSearch2Task+0x12c>)

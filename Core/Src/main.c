@@ -59,8 +59,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1000  //无反馈时电机工作占空
-#define PWM_Lowest 480
+#define PWM_Mid 2000  //无反馈时电机工作占空
+#define PWM_Lowest 300
 #define PWM_Higest 1500 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
@@ -1391,7 +1391,8 @@ void StreamTask(void const * argument)
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid+500;
+		  	  	  	  	  go_straight_speed=1000;
+		  	  	  	  	  //go_straight_speed=2000;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
@@ -1727,7 +1728,7 @@ void LineSearchTask(void const * argument)
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
-	float Kp=9;//,Ki=0,Kd=0;
+	float Kp=4.5;//,Ki=0,Kd=0;
 	vTaskSuspend(LineSearchHandle);
 	vTaskResume(MileageHandle);
 	//HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
@@ -1749,8 +1750,8 @@ void LineSearchTask(void const * argument)
 	  		  	  	  		  Error=PID_Line_Follow(10);
 	  		  	  	  		  Error_total+=Error;
 
-	  		  	  	  		  pulse_increment_float=300-((int32_t) (Kp*(Error>0?Error:-Error)));
-	  		  	  	  		  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:50;
+	  		  	  	  		  pulse_increment_float=150-((int32_t) (Kp*(Error>0?Error:-Error)));
+	  		  	  	  		  pulse_increment= pulse_increment_float>0?(int)pulse_increment_float:25;
 
   }
   /* USER CODE END LineSearchTask */
