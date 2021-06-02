@@ -33,9 +33,10 @@ typedef enum State {Initial=1,
 					Line_Search,Line_Search2,
 					TurnRight,TurnRight2,TurnLeft,
 					GoStraight_Until_Barrier,
-					Go_Mile_1,Go_Mile_2_Until_Barrier,Go_Line_Follow,Go_to_Bridge,
+					Go_Mile_1,Go_Mile_2_Until_Barrier,Go_Mile_2_Until_Apriltag,Go_Line_Follow,Go_to_Bridge,
 					Cross_bridge,
 					Mile_Adjust,
+					Apriltag_Adjust1,
 					Idle,
 					Unknow} State;
 typedef struct Angle
@@ -59,7 +60,7 @@ typedef struct Distance
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define PWM_Mid 1000  //无反馈时电机工作占空
-#define PWM_Lowest 500
+#define PWM_Lowest 480
 #define PWM_Higest 1500 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
@@ -101,7 +102,6 @@ Distance critical_distance={0.0,0.0};
 Distance current_distance={0,0};
 int distance_flag=0;
 int gyro_reset_flag=0;
-int camera_recieve_IT_flag=0;
 int go_straight_speed=PWM_Mid;
 //Encoder PV
 int32_t mileage_IT_number=-1;
@@ -147,6 +147,7 @@ float Angle_Diff(float target, float input);
 int PID_Turning(float increment_angle,float Accept_Error);
 void PID_Straight(float speed);
 float PID_Line_Follow(float Accept_Error);
+int PID_Apriltag(float Accept_Error);
 Distance Ultrasonic_Feedback(void);
 void delay(uint32_t time_ms);
 /* USER CODE END PFP */
@@ -810,38 +811,39 @@ float Angle_Diff(float target, float input)
 
 int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn right, parameter is negative
 {
-			float PID_target=0;
-			float PID_Error_Last=0;
-			float initial_yaw=0;
-			float PID_Output=0,PID_Input=0;;
-			float Error = 0, Error_Total=0;
-			float KP=7, KI=0.05, KD=0;
-			int t=0;
-			uint8_t Flag=0; //Indicate that if verifying process begin.
-			Car_Stop();
-			//delay(1500);
-			for(int i=0;i<10;i++)			//Get average initial direction
-			{
+
+	float PID_target=0;
+	float PID_Error_Last=0;
+	float initial_yaw=0;
+	float PID_Output=0,PID_Input=0;;
+	float Error = 0, Error_Total=0;
+	float KP=7, KI=0.05, KD=0;
+	int t=0;
+	uint8_t Flag=0; //Indicate that if verifying process begin.
+	Car_Stop();
+	//delay(1500);
+	for(int i=0;i<10;i++)			//Get average initial direction
+	{
 //				if(gyro_ready_flag)
 //				{
-					//gyro_ready_flag=0;
-					osSemaphoreWait(GyroReadySemHandle, osWaitForever);
-					//ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
-					initial_yaw+=angle.z;
+			//gyro_ready_flag=0;
+			osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+			//ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
+			initial_yaw+=angle.z;
 //				}
 //				else
 //					continue;
-			}
-			initial_yaw=initial_yaw/10;
-			PID_target=initial_yaw + increment_angle;
-			if(PID_target > 180)
-				PID_target=-360+PID_target;
-			if(PID_target <-180)
-				PID_target=360+PID_target;
+	}
+	initial_yaw=initial_yaw/10;
+	PID_target=initial_yaw + increment_angle;
+	if(PID_target > 180)
+		PID_target=-360+PID_target;
+	if(PID_target <-180)
+		PID_target=360+PID_target;
 
 
-		  for(;;)
-		  {
+  for(;;)
+  {
 //			  if(state == Idle)
 //			  		  {
 //			  			  return 1;
@@ -849,58 +851,58 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 //			  	  if(gyro_ready_flag==0)
 //			  		  continue;
 //			  	  gyro_ready_flag=0;
-			  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
-			  	 //ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
+	  	 osSemaphoreWait(GyroReadySemHandle, osWaitForever);
+	  	 //ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(portMAX_DELAY));
 
-			  	 PID_Input = angle.z;
-			  	 Error=Angle_Diff(PID_target, PID_Input);
-			  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
-			  	 {
-			  		 t++;
-			  		if(t>2)
-			  		{
-			  			Flag = 1;
-			  			t=0;
-			  		}
-			  	 }
-			  	 if(Flag)
-			  	 {
-			  		if(t>Angle_stable_cycles)
-			  		{
-			  			Flag=0;
-			  			t=0;
-			  			return 0;
-			  		}
-			  		else if((Error > -Accept_Error) && (Error < Accept_Error))
-			  		{
-			  			t++;
-			  		}
-			  		else
-			  		{
-			  			Flag=0;
-			  			t=0;
-			  		}
-			  	 }
-			  	 Error_Total=Error_Total+KI*Error;
-			     PID_Output = KP * Error  +
-			 				  KD * (Error - PID_Error_Last ) +
-							  Error_Total;
-			     PID_Error_Last = Error;
-			     if(PID_Output < 0)
-			     {
-			    	 PID_Output-=PWM_Lowest;
-			    	 if(-PID_Output > PWM_Higest)
-			    	 	PID_Output=-PWM_Higest;
-			     }
+	  	 PID_Input = angle.z;
+	  	 Error=Angle_Diff(PID_target, PID_Input);
+	  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
+	  	 {
+	  		 t++;
+	  		if(t>2)
+	  		{
+	  			Flag = 1;
+	  			t=0;
+	  		}
+	  	 }
+	  	 if(Flag)
+	  	 {
+	  		if(t>Angle_stable_cycles)
+	  		{
+	  			Flag=0;
+	  			t=0;
+	  			return 0;
+	  		}
+	  		else if((Error > -Accept_Error) && (Error < Accept_Error))
+	  		{
+	  			t++;
+	  		}
+	  		else
+	  		{
+	  			Flag=0;
+	  			t=0;
+	  		}
+	  	 }
+	  	 Error_Total=Error_Total+KI*Error;
+	     PID_Output = KP * Error  +
+	 				  KD * (Error - PID_Error_Last ) +
+					  Error_Total;
+	     PID_Error_Last = Error;
+	     if(PID_Output < 0)
+	     {
+	    	 PID_Output-=PWM_Lowest;
+	    	 if(-PID_Output > PWM_Higest)
+	    	 	PID_Output=-PWM_Higest;
+	     }
 
-			     else if(PID_Output > 0)
-			     {
-			    	 PID_Output+=PWM_Lowest;
-			    	 if(-PID_Output > PWM_Higest)
-			    	 	PID_Output=-PWM_Higest;
-			     }
-			     else
-			    	PID_Output=0;
+	     else if(PID_Output > 0)
+	     {
+	    	 PID_Output+=PWM_Lowest;
+	    	 if(-PID_Output > PWM_Higest)
+	    	 	PID_Output=-PWM_Higest;
+	     }
+	     else
+	    	PID_Output=0;
 //			     if(PID_Output >= 0)
 //			     {
 //
@@ -918,12 +920,13 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 //			    		 PID_Output=-PWM_Higest;
 //			    	 if(-PID_Output < PWM_Lowest)
 //			    	 	 PID_Output=-PWM_Lowest;
-			    	 taskENTER_CRITICAL();
-			    	 PWM_SET_RIGHT ((int32_t) PID_Output);
-			    	 PWM_SET_LEFT((int32_t)(-PID_Output));
-			    	 taskEXIT_CRITICAL();
-			     }
-			     delay(2);
+	    	 taskENTER_CRITICAL();
+	    	 PWM_SET_RIGHT ((int32_t) PID_Output);
+	    	 PWM_SET_LEFT((int32_t)(-PID_Output));
+	    	 taskEXIT_CRITICAL();
+	     }
+	     delay(2);
+
 }
 
 void PID_Straight(float speed)
@@ -1030,6 +1033,83 @@ float PID_Line_Follow(float Accept_Error)
 			     return First_Error;
 }
 
+int PID_Apriltag(float Accept_Error)
+{
+
+	float PID_target=0;
+	float PID_Error_Last=0;
+	float PID_Output=0,PID_Input=0;;
+	float Error = 0, Error_Total=0;
+	float KP=2, KI=0, KD=0;
+	int t=0;
+	uint8_t Flag=0; //Indicate that if verifying process begin.
+	Car_Stop();
+ 	osSemaphoreWait(ApriltagSemHandle, 1000);
+	//delay(1500);
+  for(;;)
+  {
+//	  	 osSemaphoreWait(ApriltagSemHandle, 0);
+//	  	 osSemaphoreWait(ApriltagSemHandle, osWaitForever);
+	  	 osSemaphoreWait(CameraUARTSemHandle, 0);
+	  	 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+	  	 PID_Input = (Camera_Data & (0x07FF))-1000;
+	  	 Error=PID_target - PID_Input;
+	  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
+	  	 {
+	  		 t++;
+	  		if(t>2)
+	  		{
+	  			Flag = 1;
+	  			t=0;
+	  		}
+	  	 }
+	  	 if(Flag)
+	  	 {
+	  		if(t>5)
+	  		{
+	  			Flag=0;
+	  			t=0;
+	  			return 0;
+	  		}
+	  		else if((Error > -Accept_Error) && (Error < Accept_Error))
+	  		{
+	  			t++;
+	  		}
+	  		else
+	  		{
+	  			Flag=0;
+	  			t=0;
+	  		}
+	  	 }
+	  	 Error_Total=Error_Total+KI*Error;
+	     PID_Output = KP * Error  +
+	 				  KD * (Error - PID_Error_Last ) +
+					  Error_Total;
+	     PID_Error_Last = Error;
+	     if(PID_Output < 0)
+	     {
+	    	 PID_Output-=PWM_Lowest;
+	    	 if(-PID_Output > PWM_Higest)
+	    	 	PID_Output=-PWM_Higest;
+	     }
+
+	     else if(PID_Output > 0)
+	     {
+	    	 PID_Output+=PWM_Lowest;
+	    	 if(-PID_Output > PWM_Higest)
+	    	 	PID_Output=-PWM_Higest;
+	     }
+	     else
+	    	PID_Output=0;
+	    	 taskENTER_CRITICAL();
+	    	 PWM_SET_RIGHT ((int32_t) (-PID_Output));
+	    	 PWM_SET_LEFT  ((int32_t)   PID_Output );
+	    	 taskEXIT_CRITICAL();
+	     }
+	     delay(2);
+
+}
+
 Distance Ultrasonic_Feedback(void)
 {
 	uint8_t info=0xA0;
@@ -1054,13 +1134,13 @@ Distance Ultrasonic_Feedback(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
   	if (huart->Instance==USART2){
+  		osSemaphoreWait(CameraUARTSemHandle, 0);
   		Camera_Data=0x0000;
-  		//osSemaphoreWait(CameraUARTSemHandle, 0);
   		Camera_Data=Camera_Data | (((uint16_t) (Rx_Buf[0]))<<8);
   		Camera_Data=Camera_Data|((uint16_t) (Rx_Buf[1]));
+  		osSemaphoreRelease(CameraUARTSemHandle);
   		if((Camera_Data & 0xF800) == 0)
   		{
-  					osSemaphoreRelease(CameraUARTSemHandle);
   			  		//Data=Data & (0x07F0);
   			  		//HAL_UART_Transmit(&huart1, (uint8_t*) &Camera_Data,2,10);
   			  		//HAL_UART_AbortReceive_IT(&huart1);
@@ -1081,6 +1161,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   			default:
   				break;
   			}
+  			HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   			Rx_Buf[0]=0;
   			Rx_Buf[1]=0;
@@ -1104,10 +1185,10 @@ uint8_t State_Transition(State* current_state)
 					next_state = Line_Search;
 					break;
 		case Line_Search:
-					if(distance_flag==0)
-						next_state = Line_Search;
-					else
-						next_state= TurnRight;
+//					if(distance_flag==0)
+//						next_state = Line_Search;
+//					else
+						next_state= Apriltag_Adjust1;
 					break;
 		case Line_Search2:
 						next_state= TurnRight;
@@ -1125,7 +1206,7 @@ uint8_t State_Transition(State* current_state)
 					next_state= Cross_bridge;
 					break;
 		case Cross_bridge:
-					next_state= Go_Mile_2_Until_Barrier;
+					next_state= Go_Mile_2_Until_Apriltag;
 					break;
 		case GoStraight_Until_Barrier:
 					//osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
@@ -1148,6 +1229,9 @@ uint8_t State_Transition(State* current_state)
 		case Go_Mile_2_Until_Barrier:
 					next_state=TurnRight2;
 					break;
+		case Go_Mile_2_Until_Apriltag:
+					next_state=TurnRight2;
+					break;
 		case Mile_Adjust:
 					switch (temp_state)
 					{
@@ -1159,6 +1243,9 @@ uint8_t State_Transition(State* current_state)
 						break;
 					}
 					//temp_state = Mile_Adjust;
+					break;
+		case Apriltag_Adjust1:
+					next_state=TurnRight;
 					break;
 		default:
 					next_state = Initial;
@@ -1257,7 +1344,6 @@ void StreamTask(void const * argument)
 	  case Line_Search:
 		  		  	  	  delay(500);
 		  		  	  	  critical_distance.front=150;
-		  		  	  	  camera_recieve_IT_flag=1;
 		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  		  	  	  vTaskResume(MileageHandle);
 		  		  	  	  vTaskResume(LineSearchHandle);
@@ -1266,11 +1352,9 @@ void StreamTask(void const * argument)
 		  		  	  	  vTaskResume(LineSearchHandle);
 		  		  	  	  delay(2000);
 		  		  	  	  //delay(300000);
-		  		  	  	  osSemaphoreWait(CriticalDistanceSemHandle, 0);
-		  		  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+		  		  	  	  osSemaphoreWait(ApriltagSemHandle, 0);
+		  		  	  	  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
 		  		  	  	  vTaskDelete(LineSearchHandle);
-		  	  	  	  	  camera_recieve_IT_flag=0;
-	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
 		  	  	  	  	  break;
 	  case Line_Search2:
 		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
@@ -1349,7 +1433,6 @@ void StreamTask(void const * argument)
 	  case GoStraight_Until_Barrier:
 		  	  	  	  	  //state= Idle;
 		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
-		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  //state= GoStraight;
 		  	  	  	  	  critical_distance.front=350;
@@ -1402,6 +1485,24 @@ void StreamTask(void const * argument)
 		  	  	  		  gyro_reset_flag=1;
 		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
+	  case Go_Mile_2_Until_Apriltag:
+						  vTaskSuspend(DistanceCheckHandle);
+						  gyro_reset_flag=0;
+						  vTaskResume(GyroReceiveHandle);
+						  delay(500);
+						  PID_Straight_Reset_Flag=1;
+						  go_straight_speed=PWM_Mid-200;
+						  vTaskResume(GoStraightHandle);
+						  delay(500);
+						  PID_Straight_Reset_Flag=0;
+						  osSemaphoreWait(ApriltagSemHandle, 0);
+						  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
+						  PID_Straight_Reset_Flag=1;
+						  vTaskSuspend(GoStraightHandle);
+						  Car_Stop();
+						  gyro_reset_flag=1;
+						  //vTaskSuspend(MileageHandle);
+						  break;
 	  case Mile_Adjust:
 		  	  	  	  	  vTaskResume(MileageHandle);
 		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest-80);
@@ -1412,6 +1513,18 @@ void StreamTask(void const * argument)
 		  	  	  		  Car_Stop();
 		  	  	  		  vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
+	  case Apriltag_Adjust1:
+						  vTaskSuspend(DistanceCheckHandle);
+						  vTaskSuspend(GoStraightHandle);
+						  vTaskSuspend(MileageHandle);
+						  gyro_reset_flag=1;
+						  Car_Stop();
+						  delay(50);
+						  distance_flag=0;
+						  delay(500);
+						  PID_Apriltag(5);
+						  Car_Stop();
+						  break;
 	  case Idle:
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
