@@ -36,7 +36,7 @@ typedef enum State {Initial=1,
 					Go_Mile_1,Go_Mile_2_Until_Barrier,Go_Mile_2_Until_Apriltag,Go_Line_Follow,Go_to_Bridge,
 					Cross_bridge,
 					Mile_Adjust,
-					Apriltag_Adjust1,
+					Apriltag_Adjust1,Apriltag_Adjust2,Apriltag_Check,Apriltag_Check2,
 					Idle,
 					Unknow} State;
 typedef struct Angle
@@ -86,6 +86,7 @@ osThreadId GoStraightHandle;
 osThreadId LineSearchHandle;
 osThreadId LineSearch2Handle;
 osThreadId PIDCameraHandle;
+osThreadId PIDCamera2Handle;
 osSemaphoreId CameraUARTSemHandle;
 osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
@@ -139,6 +140,7 @@ void GoStraightTask(void const * argument);
 void LineSearchTask(void const * argument);
 void LineSearch2Task(void const * argument);
 void PIDCameraTask(void const * argument);
+void PIDCamera2Task(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void Car_Initial(void);
@@ -152,6 +154,7 @@ int PID_Turning(float increment_angle,float Accept_Error);
 void PID_Straight(float speed);
 float PID_Line_Follow(float Accept_Error);
 int PID_Apriltag(float Accept_Error);
+int Apriltag_Verify(void);
 Distance Ultrasonic_Feedback(void);
 void delay(uint32_t time_ms);
 /* USER CODE END PFP */
@@ -174,7 +177,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-   HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -274,6 +277,10 @@ int main(void)
   /* definition and creation of PIDCamera */
   osThreadDef(PIDCamera, PIDCameraTask, osPriorityNormal, 0, 128);
   PIDCameraHandle = osThreadCreate(osThread(PIDCamera), NULL);
+
+  /* definition and creation of PIDCamera2 */
+  osThreadDef(PIDCamera2, PIDCamera2Task, osPriorityNormal, 0, 128);
+  PIDCamera2Handle = osThreadCreate(osThread(PIDCamera2), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -745,8 +752,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -825,7 +832,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 	float initial_yaw=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
-	float KP=15, KI=1, KD=0;
+	float KP=15, KI=2, KD=0;
 	int t=0;
 	float pwm_left=0,pwm_right=0;
 	uint8_t Flag=0; //Indicate that if verifying process begin.
@@ -1006,7 +1013,7 @@ int PID_Apriltag(float Accept_Error)
 	float PID_Error_Last=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
-	float KP=2, KI=0, KD=0;
+	float KP=2, KI=0, KD=0.5;
 	int t=0;
 	uint8_t Flag=0; //Indicate that if verifying process begin.
 	Car_Stop();
@@ -1031,7 +1038,7 @@ int PID_Apriltag(float Accept_Error)
 	  	 }
 	  	 if(Flag)
 	  	 {
-	  		if(t>5)
+	  		if(t>3)
 	  		{
 	  			Flag=0;
 	  			t=0;
@@ -1074,6 +1081,20 @@ int PID_Apriltag(float Accept_Error)
 	     }
 	     delay(2);
 
+}
+
+int Apriltag_Verify(void)
+{
+	int sem_count=0;
+	for(int i=0;i<10;i++)
+	{
+		if(osSemaphoreWait(ApriltagSemHandle, 500)==0)
+			sem_count++;
+	}
+	if(sem_count>8)
+		return 1;
+	else
+		return 0;
 }
 
 Distance Ultrasonic_Feedback(void)
@@ -1148,13 +1169,10 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = TurnRight;
+					next_state = Line_Search;
 					break;
 		case Line_Search:
-//					if(distance_flag==0)
-//						next_state = Line_Search;
-//					else
-						next_state= Line_Search;
+					next_state = Apriltag_Check;
 					break;
 		case Line_Search2:
 						next_state= TurnRight;
@@ -1163,7 +1181,7 @@ uint8_t State_Transition(State* current_state)
 						next_state = Line_Search;
 				  	break;
 		case TurnRight:
-					next_state = Go_Mile_1;
+					next_state = Cross_bridge;
 					break;
 		case TurnRight2:
 				 	next_state = Line_Search2;
@@ -1211,7 +1229,22 @@ uint8_t State_Transition(State* current_state)
 					//temp_state = Mile_Adjust;
 					break;
 		case Apriltag_Adjust1:
-					next_state=TurnRight;
+					next_state = TurnRight;
+					break;
+		case Apriltag_Adjust2:
+					next_state = Line_Search2;
+					break;
+		case Apriltag_Check:
+					if(Apriltag_Verify())
+						next_state = Apriltag_Adjust1;
+					else
+						next_state = Line_Search;
+					break;
+		case Apriltag_Check2:
+					if(Apriltag_Verify())
+						next_state = Apriltag_Adjust2;
+					else
+						next_state = Go_Mile_2_Until_Apriltag;
 					break;
 		default:
 					next_state = Initial;
@@ -1325,20 +1358,27 @@ void StreamTask(void const * argument)
 //		  	  	  	  	  break;
 		  	  	  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  	  	  	  	  vTaskResume(PIDCameraHandle);
-		  	  	  	  	  delay(600000);
+		  	  	  	  	  //delay(600000);
 		  	  	  	  	  osSemaphoreWait(ApriltagSemHandle, 0);
 		  	  	  	  	  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
+		  	  	  	  	  PWM_SET_LEFT(PWM_Mid-100);
+		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid-100);
+		  	  	  	  	  delay(1200);
+		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
 	  case Line_Search2:
-		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
-		  	  	  	  	  vTaskSuspend(GoStraightHandle);
-		  	  	  	  	  vTaskResume(MileageHandle);
-		  		  	  	  delay(500);
-		  		  	  	  critical_distance.front=350;
-		  		  	  	  vTaskResume(LineSearch2Handle);
-		  		  	  	  delay(50000);
+//		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
+//		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
+//		  	  	  	  	  vTaskSuspend(GoStraightHandle);
+//		  	  	  	  	  vTaskResume(MileageHandle);
+//		  		  	  	  delay(500);
+//		  		  	  	  critical_distance.front=350;
+//		  		  	  	  vTaskResume(LineSearch2Handle);
+//		  		  	  	  delay(50000);
+						  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+						  vTaskResume(PIDCamera2Handle);
+						  delay(60000);
 		  	  	  	  	  break;
 	  case Go_Line_Follow:
 		  	  	  	  	  break;
@@ -1356,7 +1396,7 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
 
-		  	  	  	  	  pulse_incremnet=1000;//上下�??????
+		  	  	  	  	  pulse_incremnet=500;//上下�???????
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
@@ -1365,7 +1405,7 @@ void StreamTask(void const * argument)
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=1000;
+		  	  	  	  	  go_straight_speed=1800;
 		  	  	  	  	  //go_straight_speed=2000;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
@@ -1387,7 +1427,7 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,5);
+		  	  	  	  	  PID_Turning(-90,2);
 		  	  	  	  	  gyro_reset_flag=1;
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
@@ -1474,6 +1514,9 @@ void StreamTask(void const * argument)
 						  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
 						  PID_Straight_Reset_Flag=1;
 						  vTaskSuspend(GoStraightHandle);
+						  PWM_SET_LEFT(PWM_Mid-100);
+						  PWM_SET_RIGHT(PWM_Mid-100);
+						  delay(1200);
 						  Car_Stop();
 						  gyro_reset_flag=1;
 						  //vTaskSuspend(MileageHandle);
@@ -1500,6 +1543,24 @@ void StreamTask(void const * argument)
 						  PID_Apriltag(5);
 						  Car_Stop();
 						  break;
+	  case Apriltag_Adjust2:
+						  vTaskSuspend(DistanceCheckHandle);
+						  vTaskSuspend(GoStraightHandle);
+						  vTaskSuspend(MileageHandle);
+						  gyro_reset_flag=1;
+						  Car_Stop();
+						  delay(50);
+						  distance_flag=0;
+						  delay(500);
+						  PID_Apriltag(5);
+						  Car_Stop();
+						  break;
+		  case Apriltag_Check:
+		  	  	  	  	  Car_Stop();
+		  	  	  	  	  break;
+	  case Apriltag_Check2:
+		  	  	  	  	  Car_Stop();
+		  	  	  	  	  break;
 	  case Idle:
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
@@ -1787,7 +1848,7 @@ void PIDCameraTask(void const * argument)
   /* Infinite loop */
 	vTaskSuspend(PIDCameraHandle);
 	float PID_Error_Last=0;
-	float PID_Output=0;                    // PWM输出占空
+	float PID_Output=0;
 	float Error = 0, Error_Total=0;
 	int32_t PID_Input=0;
 	float PID_Target=0;
@@ -1824,6 +1885,57 @@ void PIDCameraTask(void const * argument)
 	     taskEXIT_CRITICAL();
   }
   /* USER CODE END PIDCameraTask */
+}
+
+/* USER CODE BEGIN Header_PIDCamera2Task */
+/**
+* @brief Function implementing the PIDCamera2 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_PIDCamera2Task */
+void PIDCamera2Task(void const * argument)
+{
+  /* USER CODE BEGIN PIDCamera2Task */
+		vTaskSuspend(PIDCamera2Handle);
+		float PID_Error_Last=0;
+		float PID_Output=0;
+		float Error = 0, Error_Total=0;
+		int32_t PID_Input=0;
+		float PID_Target=0;
+		float Kp=2,Ki=0.1,Kd=0.2;
+		float pwm_left=0,pwm_right=0;
+  /* Infinite loop */
+  for(;;)
+  {
+	  	 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+	  	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);//Red LED
+	  	 //delay(10);
+	  	 //Data=0x03E8;
+	  	 //PID_Input=0;
+	  	 PID_Input = (Camera_Data & (0x07FF))-1000;
+	  	 if (PID_Input == -1000)
+	  		 continue;
+	  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
+	  	 Error_Total=Error_Total+Ki*Error;
+	  	 PID_Output = Kp * Error  +
+	  				  Kd * (Error - PID_Error_Last ) +
+	  				  Error_Total;
+	  	 PID_Error_Last = Error;
+	  	 pwm_right=PWM_Mid + PID_Output;
+	  	 pwm_left =PWM_Mid - PID_Output;
+	  	 pwm_right += pwm_right>0 ?PWM_Lowest:-PWM_Lowest;
+	  	 pwm_left  += pwm_left>0  ?PWM_Lowest:-PWM_Lowest;
+	  	 pwm_right =  pwm_right>= PWM_Higest?PWM_Higest:pwm_right;
+	  	 pwm_right =  pwm_right<= -PWM_Higest?-PWM_Higest:pwm_right;
+	  	 pwm_left  =  pwm_left >= PWM_Higest?PWM_Higest:pwm_left;
+	  	 pwm_left  =  pwm_left <= -PWM_Higest?PWM_Higest:pwm_left;// 限幅
+	     taskENTER_CRITICAL();
+	     PWM_SET_RIGHT ((int32_t)   pwm_right);
+	     PWM_SET_LEFT  ((int32_t)   pwm_left );
+	     taskEXIT_CRITICAL();
+  }
+  /* USER CODE END PIDCamera2Task */
 }
 
  /**
