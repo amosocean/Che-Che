@@ -59,9 +59,10 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 2000  //无反馈时电机工作占空
-#define PWM_Lowest 300
-#define PWM_Higest 1500 //for our motor, this value should less than 1300
+#define PWM_Mid 300 //无反馈时电机工作占空
+#define PWM_Lowest 200
+#define PWM_Higest 2000 //for our motor, this value should less than 1300
+#define PWM_Bias 0.9331
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
 
@@ -402,7 +403,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 1001-1;
+  htim3.Init.Prescaler = 601-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 2000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -461,7 +462,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 901-1;
+  htim4.Init.Prescaler = 601-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 2000;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -737,8 +738,8 @@ void Car_Initial(void)
 	taskENTER_CRITICAL();
 	state=Initial;
 	temp_state = Unknow;
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -1284,12 +1285,13 @@ void PWM_SET_LEFT(int32_t duty)
 
 void PWM_SET_RIGHT(int32_t duty)
 {
+	duty=duty*PWM_Bias;
 	if ( duty < 0 )
 		{
-		if (duty <= -2000)
+		if (duty <= -2000*PWM_Bias)
 			duty = 1;
 		else
-			duty = 2000 + duty;
+			duty = 2000*PWM_Bias + duty;
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 		}
 	else
@@ -1298,8 +1300,8 @@ void PWM_SET_RIGHT(int32_t duty)
 				duty = 1;
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 		}
-	if (duty > 2000)
-		duty = 2000;
+	if (duty > 2000*PWM_Bias)
+		duty = 2000*PWM_Bias;
 	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_1,duty);
 }
 
@@ -1382,7 +1384,7 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
 
-		  	  	  	  	  pulse_incremnet=5400;//上下�???
+		  	  	  	  	  pulse_incremnet=5400;//上下�?????
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
@@ -1724,7 +1726,7 @@ void GoStraightTask(void const * argument)
 void LineSearchTask(void const * argument)
 {
   /* USER CODE BEGIN LineSearchTask */
-	int32_t pulse_increment=1200;
+	int32_t pulse_increment=300;
 	float Error=0;
 	float Error_total=0;
 	float pulse_increment_float=0;
