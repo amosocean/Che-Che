@@ -60,7 +60,7 @@ typedef struct Distance
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define PWM_Mid 800 //无反馈时电机工作占空
-#define PWM_Lowest 180
+#define PWM_Lowest 200
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define PWM_Bias 0.9331
 //#define PWM_Bias 1
@@ -1396,7 +1396,7 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=2400;//室外
 						  //pulse_incremnet=600; //小正方形
 
-		  	  	  	  	  pulse_incremnet=500;//上下�???????
+		  	  	  	  	  pulse_incremnet=1500;//上下�???????
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
@@ -1405,7 +1405,7 @@ void StreamTask(void const * argument)
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=1800;
+		  	  	  	  	  go_straight_speed=2000;
 		  	  	  	  	  //go_straight_speed=2000;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
@@ -1852,7 +1852,7 @@ void PIDCameraTask(void const * argument)
 	float Error = 0, Error_Total=0;
 	int32_t PID_Input=0;
 	float PID_Target=0;
-	float Kp=2,Ki=0.1,Kd=0.2;
+	float Kp=2,Ki=0.07,Kd=3;
 	float pwm_left=0,pwm_right=0;
   /* Infinite loop */
   for(;;)
