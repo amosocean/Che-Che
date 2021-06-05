@@ -758,6 +758,7 @@ void Car_Initial(void)
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
 	HAL_TIM_Base_Start_IT(&htim2);
+	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
 }
@@ -1097,6 +1098,12 @@ int Apriltag_Verify(void)
 		return 0;
 }
 
+void Software_Reset()
+{
+	__set_FAULTMASK(1);
+	NVIC_SystemReset();
+}
+
 Distance Ultrasonic_Feedback(void)
 {
 	uint8_t info=0xA0;
@@ -1238,7 +1245,7 @@ uint8_t State_Transition(State* current_state)
 					if(Apriltag_Verify())
 						next_state = Apriltag_Adjust1;
 					else
-						next_state = Line_Search;
+						Software_Reset();
 					break;
 		case Apriltag_Check2:
 					if(Apriltag_Verify())
