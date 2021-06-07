@@ -894,7 +894,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 	     pwm_right =  pwm_right>= PWM_Higest?PWM_Higest:pwm_right;
 	     pwm_right =  pwm_right<= -PWM_Higest?-PWM_Higest:pwm_right;
 	     pwm_left  =  pwm_left >= PWM_Higest?PWM_Higest:pwm_left;
-	     pwm_left  =  pwm_left <= -PWM_Higest?PWM_Higest:pwm_left;// 限幅
+	     pwm_left  =  pwm_left <= -PWM_Higest?-PWM_Higest:pwm_left;// 限幅
 	    	 taskENTER_CRITICAL();
 	    	 PWM_SET_RIGHT ((int32_t)   pwm_right);
 	    	 PWM_SET_LEFT  ((int32_t)   pwm_left );
@@ -908,7 +908,7 @@ void PID_Straight(float speed)
 					float PID_target=0;
 					float PID_Error_Last=0;
 					float initial_yaw=0;
-					float PID_Output=0,PID_Input=0;;
+					float PID_Output=0,PID_Input=0;
 					float Error = 0, Error_Total=0,Error_Total_Total=0;
 					float KP=10, KI=3, KD=5, KI2=0.013;
 					int32_t pwm_right=0;

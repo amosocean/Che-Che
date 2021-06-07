@@ -2414,7 +2414,7 @@ Disassembly of section .text:
  8001b2a:	eef4 7ac7 	vcmpe.f32	s15, s14
  8001b2e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8001b32:	d801      	bhi.n	8001b38 <PID_Turning+0x2c0>
- 8001b34:	4b17      	ldr	r3, [pc, #92]	; (8001b94 <PID_Turning+0x31c>)
+ 8001b34:	4b19      	ldr	r3, [pc, #100]	; (8001b9c <PID_Turning+0x324>)
  8001b36:	e000      	b.n	8001b3a <PID_Turning+0x2c2>
  8001b38:	693b      	ldr	r3, [r7, #16]
  8001b3a:	613b      	str	r3, [r7, #16]
