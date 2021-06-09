@@ -3117,13 +3117,13 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
  8001b34:	e000      	b.n	8001b38 <PID_Turning+0x2a8>
  8001b36:	693b      	ldr	r3, [r7, #16]
  8001b38:	613b      	str	r3, [r7, #16]
-	     pwm_left  =  pwm_left <= -PWM_Higest?PWM_Higest:pwm_left;// 限幅
+	     pwm_left  =  pwm_left <= -PWM_Higest?-PWM_Higest:pwm_left;// 限幅
  8001b3a:	edd7 7a04 	vldr	s15, [r7, #16]
  8001b3e:	ed9f 7a1c 	vldr	s14, [pc, #112]	; 8001bb0 <PID_Turning+0x320>
  8001b42:	eef4 7ac7 	vcmpe.f32	s15, s14
  8001b46:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8001b4a:	d801      	bhi.n	8001b50 <PID_Turning+0x2c0>
- 8001b4c:	4b17      	ldr	r3, [pc, #92]	; (8001bac <PID_Turning+0x31c>)
+ 8001b4c:	4b19      	ldr	r3, [pc, #100]	; (8001bb4 <PID_Turning+0x324>)
  8001b4e:	e000      	b.n	8001b52 <PID_Turning+0x2c2>
  8001b50:	693b      	ldr	r3, [r7, #16]
  8001b52:	613b      	str	r3, [r7, #16]
@@ -3181,7 +3181,7 @@ void PID_Straight(float speed)
 					float initial_yaw=0;
  8001bce:	f04f 0300 	mov.w	r3, #0
  8001bd2:	643b      	str	r3, [r7, #64]	; 0x40
-					float PID_Output=0,PID_Input=0;;
+					float PID_Output=0,PID_Input=0;
  8001bd4:	f04f 0300 	mov.w	r3, #0
  8001bd8:	62fb      	str	r3, [r7, #44]	; 0x2c
  8001bda:	f04f 0300 	mov.w	r3, #0
