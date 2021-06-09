@@ -1269,6 +1269,28 @@ void PWM_SET_LEFT(int32_t duty)
 	__HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_1,duty);
 }
 
+void PWM_SET_RIGHT(int32_t duty)
+{
+	duty=duty*PWM_Bias;
+	if ( duty < 0 )
+		{
+		if (duty <= -2000*PWM_Bias)
+			duty = 1;
+		else
+			duty = 2000*PWM_Bias + duty;
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+		}
+	else
+		{
+			if (duty == 0)
+				duty = 1;
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+		}
+	if (duty > 2000*PWM_Bias)
+		duty = 2000*PWM_Bias;
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_1,duty);
+}
+
 void stepping(void)
 {
      float Ultra_Input=0, Ultra_Input_last=0;
@@ -1331,35 +1353,6 @@ void stepping(void)
 			 taskEXIT_CRITICAL();
 			 delay(100);
 	     }
-//	     }
-//	     else
-//	     {
-//		     taskENTER_CRITICAL();
-//	         PWM_SET_RIGHT (-Kp*error);
-//	         PWM_SET_LEFT(Kp*error);
-//		     taskEXIT_CRITICAL();
-//		     delay(100);
-//	     }
-//			 pulse_increment_float=150-((int32_t) Kp*error);
-//			 pulse_increment=pulse_increment_float>0?(int)pulse_increment_float:25;
-	//if (Ultra_Input > target_distance)
-	//{
-	//		 pwm_right=	PWM_Mid- (int32_t) Kp*error;
-	//		 pwm_left=	PWM_Mid+ (int32_t) Kp*error;
-	//		 pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
-	//		 pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
-	//		 pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
-	//		 pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
-	 //}
-//	 else
-//	 {
-//		 pwm_right=	PWM_Mid- (int32_t) 	error;
-//		 pwm_left=	PWM_Mid+ (int32_t)  error;
-//		 pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
-//		 pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
-//		 pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
-//		 pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
-//	 }
      }
 }
 
@@ -1429,95 +1422,8 @@ void stepping2(void)
 			 taskEXIT_CRITICAL();
 			 delay(100);
 	     }
-//			 pulse_increment_float=150-((int32_t) Kp*error);
-//			 pulse_increment=pulse_increment_float>0?(int)pulse_increment_float:25;
-	//if (Ultra_Input > target_distance)
-	//{
-	//		 pwm_right=	PWM_Mid- (int32_t) Kp*error;
-	//		 pwm_left=	PWM_Mid+ (int32_t) Kp*error;
-	//		 pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
-	//		 pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
-	//		 pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
-	//		 pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
-	 //}
-//	 else
-//	 {
-//		 pwm_right=	PWM_Mid- (int32_t) 	error;
-//		 pwm_left=	PWM_Mid+ (int32_t)  error;
-//		 pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
-//		 pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
-//		 pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
-//		 pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
-//	 }
      }
 }
-//void PID_gomile6(void)
-//{
-//	        float PID_target=0;
-//			float PID_Error_Last=0;
-//			float initial_distance=300;
-//			float PID_Output=0,PID_Input=0, PID_Input1=0, PID_Input2=0, PID_Input3=0;;
-//			float Error = 0, Error_Total=0, Error_Total_Total=0;
-//			float KP=3, KI=0.01, KD=5, KI2=0;
-//		    int32_t pwm_right=0;
-//			int32_t pwm_left=0;
-//							//uint8_t Flag=0; //Indicate that if verifying process begin.
-//			Car_Stop();
-//			PID_target=initial_distance;
-//
-//			for(;;)
-//			   {
-//
-//							 	//HAL_UART_Transmit(&huart1, (uint8_t *) &Data, 4, 0xFFFF);
-//
-//
-//							  	 //if (distance.right>2000)
-//							  		// return distance;
-//				osSemaphoreWait(gomile6SemHandle, 0);
-//
-//
-//
-//
-//				PID_Input3 = PID_Input2;
-//				PID_Input2 = PID_Input1;
-//				PID_Input1 = Ultrasonic_Feedback_right_gomile6();
-//
-//				PID_Input = (PID_Input1+PID_Input2+PID_Input3)/3;
-//
-//				Error=PID_target-PID_Input;
-//				Error_Total=Error_Total+KI*Error;
-//			    Error_Total_Total= Error_Total_Total+KI2*Error_Total;
-//				PID_Output = KP * Error  +
-//			    KD * (Error - PID_Error_Last ) +
-//				Error_Total+Error_Total_Total;
-//				PID_Error_Last = Error;
-//				if(PID_Output<0)
-//
-//				{
-//				 pwm_right=	PWM_Mid+	(int32_t) 	PID_Output;
-//				 pwm_left=	PWM_Mid-	(int32_t)  	PID_Output;
-//				 pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
-//				 pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
-//				 pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
-//				 pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
-//				}
-//				else
-//				{
-//			       pwm_right=	PWM_Mid+	(int32_t) 	PID_Output;
-//				   pwm_left=	PWM_Mid-	(int32_t)  	PID_Output;
-//				   pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
-//				   pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
-//				   pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
-//			       pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
-//							     }
-//
-//				   taskENTER_CRITICAL();
-//			       PWM_SET_RIGHT (pwm_right);
-//			       PWM_SET_LEFT(pwm_left);
-//				   taskEXIT_CRITICAL();
-//						  }
-//
-//}
 
 void feeding(void)
 {
@@ -1813,27 +1719,7 @@ uint8_t State_Transition(State* current_state)
 	}
 }
 
-void PWM_SET_RIGHT(int32_t duty)
-{
-	duty=duty*PWM_Bias;
-	if ( duty < 0 )
-		{
-		if (duty <= -2000*PWM_Bias)
-			duty = 1;
-		else
-			duty = 2000*PWM_Bias + duty;
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-		}
-	else
-		{
-			if (duty == 0)
-				duty = 1;
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-		}
-	if (duty > 2000*PWM_Bias)
-		duty = 2000*PWM_Bias;
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_1,duty);
-}
+
 
 /* USER CODE END 4 */
 
