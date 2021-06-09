@@ -57,10 +57,11 @@ typedef enum State {Initial=1,
 					Go_Mile_6,
 					Go_Mile_6_7,
 					Go_Mile_7,
-					Go_Mile_8,
+					Go_Mile_8_Until_Apriltag,
 					Go_Mile_9,
 					Go_Mile_10,
 					Mile_Adjust,
+					Apriltag_Adjust1,Apriltag_Adjust2,Apriltag_Check,Apriltag_Check2,
 					Feeding,
 					Communication,
 					Idle,
@@ -93,6 +94,8 @@ typedef struct Distance
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+RTC_HandleTypeDef hrtc;
+
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -118,6 +121,7 @@ osSemaphoreId MileageSemHandle;
 osSemaphoreId MileageNegSemHandle;
 osSemaphoreId gomile6SemHandle;
 osSemaphoreId UltraFrontSemHandle;
+osSemaphoreId ApriltagSemHandle;
 /* USER CODE BEGIN PV */
 State state;
 State temp_state;
@@ -150,7 +154,7 @@ uint8_t finalcolor;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�????????????????????????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�??????????????????????????????????????????????????????????????????
 //PID PV END
 
 /* USER CODE END PV */
@@ -167,6 +171,7 @@ static void MX_UART5_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_UART4_Init(void);
+static void MX_RTC_Init(void);
 void StreamTask(void const * argument);
 void PIDCameraTask(void const * argument);
 void GyroReceiveTask(void const * argument);
@@ -231,6 +236,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM8_Init();
   MX_UART4_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -269,6 +275,10 @@ int main(void)
   /* definition and creation of UltraFrontSem */
   osSemaphoreDef(UltraFrontSem);
   UltraFrontSemHandle = osSemaphoreCreate(osSemaphore(UltraFrontSem), 1);
+
+  /* definition and creation of ApriltagSem */
+  osSemaphoreDef(ApriltagSem);
+  ApriltagSemHandle = osSemaphoreCreate(osSemaphore(ApriltagSem), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -339,6 +349,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -347,8 +358,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -372,9 +384,77 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /** Enables the Clock Security System
   */
   HAL_RCC_EnableCSS();
+}
+
+/**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* USER CODE BEGIN Check_RTC_BKUP */
+
+  /* USER CODE END Check_RTC_BKUP */
+
+  /** Initialize RTC and set the Time and Date
+  */
+  sTime.Hours = 0x0;
+  sTime.Minutes = 0x0;
+  sTime.Seconds = 0x0;
+  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
+  sDate.Month = RTC_MONTH_JANUARY;
+  sDate.Date = 0x1;
+  sDate.Year = 0x0;
+
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
+
 }
 
 /**
@@ -822,8 +902,8 @@ void Car_Initial(void)
 	state=Initial;
 	temp_state = Unknow;
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -1097,11 +1177,11 @@ float Ultrasonic_Feedback_right(void)
 //	uint8_t info=0xA0;
 //	uint8_t Rx_Buf[3]={0,0,0};
 //	uint32_t Data=0x00000000;
-//	Distance distance={0.0,0.0};//右侧超声波数�?????????
+//	Distance distance={0.0,0.0};//右侧超声波数�???????????
 //
 //	uint8_t _Rx_Buf[3]={0,0,0};
 //	uint32_t _Data=0x00000000;
-//	Distance _distance={0.0,0.0};//前方超声波数�?????????
+//	Distance _distance={0.0,0.0};//前方超声波数�???????????
 //
 //	                    float PID_target=0;
 //						float PID_Error_Last=0;
@@ -1176,12 +1256,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
   		Rx_Buf[0]=0;
   		Rx_Buf[1]=0;
-  		//camera_ready_flag=1;
   		osSemaphoreRelease(CameraUARTSemHandle);
+  		if((Camera_Data & 0x4000) != 0)//IF Apriltag is found
+  		{
+  			osSemaphoreRelease(ApriltagSemHandle);
+  		}
   		if(camera_recieve_IT_flag)
-        HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-  		/*if (Rx_Cnt>20)
-  			Rx_Cnt=0;*/
+  			HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
   	}
   	else if (huart->Instance==UART4)
 	{
@@ -1289,6 +1370,94 @@ void PWM_SET_RIGHT(int32_t duty)
 	if (duty > 2000*PWM_Bias)
 		duty = 2000*PWM_Bias;
 	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_1,duty);
+}
+
+int PID_Apriltag(float Accept_Error)
+{
+
+	float PID_target=0;
+	float PID_Error_Last=0;
+	float PID_Output=0,PID_Input=0;;
+	float Error = 0, Error_Total=0;
+	float KP=2, KI=0, KD=0.5;
+	int t=0;
+	uint8_t Flag=0; //Indicate that if verifying process begin.
+	Car_Stop();
+ 	osSemaphoreWait(ApriltagSemHandle, 1000);
+  for(;;)
+  {
+	  	 osSemaphoreWait(CameraUARTSemHandle, 0);
+	  	 osSemaphoreWait(CameraUARTSemHandle, osWaitForever);
+	  	 PID_Input = (Camera_Data & (0x07FF))-1000;
+	  	 Error=PID_target - PID_Input;
+	  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
+	  	 {
+	  		 t++;
+	  		if(t>2)
+	  		{
+	  			Flag = 1;
+	  			t=0;
+	  		}
+	  	 }
+	  	 if(Flag)
+	  	 {
+	  		if(t>3)
+	  		{
+	  			Flag=0;
+	  			t=0;
+	  			return 0;
+	  		}
+	  		else if((Error > -Accept_Error) && (Error < Accept_Error))
+	  		{
+	  			t++;
+	  		}
+	  		else
+	  		{
+	  			Flag=0;
+	  			t=0;
+	  		}
+	  	 }
+	  	 Error_Total=Error_Total+KI*Error;
+	     PID_Output = KP * Error  +
+	 				  KD * (Error - PID_Error_Last ) +
+					  Error_Total;
+	     PID_Error_Last = Error;
+	     if(PID_Output < 0)
+	     {
+	    	 PID_Output-=PWM_Lowest;
+	    	 if(-PID_Output > PWM_Higest)
+	    	 	PID_Output=-PWM_Higest;
+	     }
+
+	     else if(PID_Output > 0)
+	     {
+	    	 PID_Output+=PWM_Lowest;
+	    	 if(-PID_Output > PWM_Higest)
+	    	 	PID_Output=-PWM_Higest;
+	     }
+	     else
+	    	PID_Output=0;
+	    	 taskENTER_CRITICAL();
+	    	 PWM_SET_RIGHT ((int32_t) (-PID_Output));
+	    	 PWM_SET_LEFT  ((int32_t)   PID_Output );
+	    	 taskEXIT_CRITICAL();
+	     }
+	     delay(2);
+
+}
+
+int Apriltag_Verify(void)
+{
+	int sem_count=0;
+	for(int i=0;i<10;i++)
+	{
+		if(osSemaphoreWait(ApriltagSemHandle, 500)==0)
+			sem_count++;
+	}
+	if(sem_count>8)
+		return 1;
+	else
+		return 0;
 }
 
 void stepping(void)
@@ -1484,7 +1653,7 @@ uint8_t State_Transition(State* current_state)
 					next_state = Go_Mile_7;
 					break;
 		case TurnRight7:
-					next_state = Go_Mile_8;
+					next_state = Go_Mile_8_Until_Apriltag;
 					break;
 		case TurnRight8:
 					next_state = Go_Mile_10;
@@ -1614,14 +1783,8 @@ uint8_t State_Transition(State* current_state)
 //						next_state = Mile_Adjust;
 //						}
 					break;
-		case Go_Mile_8:
-					if(*current_state == Mile_Adjust)
-						next_state = Go_Mile_9;
-					else
-						{
-						temp_state = *current_state;
-						next_state = Mile_Adjust;
-						}
+		case Go_Mile_8_Until_Apriltag:
+					next_state=Apriltag_Check;
 					break;
 		case Go_Mile_9:
 					if(*current_state == Mile_Adjust)
@@ -1641,6 +1804,18 @@ uint8_t State_Transition(State* current_state)
 //						next_state = Mile_Adjust;
 //						}
 //					break;
+		case Apriltag_Adjust1:
+					next_state = Feeding;
+					break;
+		case Apriltag_Check:
+					if(Apriltag_Verify())
+						next_state = Apriltag_Adjust1;
+					else
+						next_state=Go_Mile_8_Until_Apriltag;
+					break;
+		case Feeding:
+					next_state=Go_Mile_9;
+					break;
 		case Mile_Adjust:
 					switch (temp_state)
 					{
@@ -1689,9 +1864,6 @@ uint8_t State_Transition(State* current_state)
 						break;
 					case Go_Mile_7:
 						next_state = TurnRight7;
-						break;
-					case Go_Mile_8:
-						next_state = Go_Mile_9;
 						break;
 					case Go_Mile_9:
 						next_state = TurnRight8;
@@ -2242,35 +2414,31 @@ void StreamTask(void const * argument)
 		  	  	  	      vTaskSuspend(DistanceCheckHandle);
 	  		              vTaskSuspend(GyroReceiveHandle);
 	  		              break;
-	  case Go_Mile_8:
+	  case Go_Mile_8_Until_Apriltag:
 						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=250;//室外
-						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
+						  camera_recieve_IT_flag=1;
+						  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
 						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  delay(1000);
-		  	  	  	      feeding();
-
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
-
+						  PID_Straight_Reset_Flag=1;
+						  go_straight_speed=PWM_Mid-200;
+						  vTaskResume(GoStraightHandle);
+						  delay(500);
+						  PID_Straight_Reset_Flag=0;
+						  osSemaphoreWait(ApriltagSemHandle, 0);
+						  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
+						  PID_Straight_Reset_Flag=1;
+						  vTaskSuspend(GoStraightHandle);
+						  PWM_SET_LEFT(PWM_Mid-100);
+						  PWM_SET_RIGHT(PWM_Mid-100);
+						  delay(1200);
+						  Car_Stop();
+						  gyro_reset_flag=1;
+						  //vTaskSuspend(MileageHandle);
+						  break;
 	  case Go_Mile_9:
+		  	  	  	  	  camera_recieve_IT_flag=0;
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
 						  pulse_incremnet=300;//室外
@@ -2318,10 +2486,28 @@ void StreamTask(void const * argument)
 		  	  	  		  gyro_reset_flag=1;
 		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
-
+	  case Apriltag_Check:
+		  	  	  	  	  Car_Stop();
+		  	  	  	  	  break;
+	  case Apriltag_Adjust1:
+						  vTaskSuspend(DistanceCheckHandle);
+						  vTaskSuspend(GoStraightHandle);
+						  //vTaskSuspend(MileageHandle);
+						  gyro_reset_flag=1;
+						  Car_Stop();
+						  delay(50);
+						  distance_flag=0;
+						  delay(500);
+						  PID_Apriltag(5);
+						  Car_Stop();
+						  break;
+	  case Feeding:
+		  	  	  	  	  Car_Stop();
+		  	  	  	  	  feeding();
+		  	  	  	  	  break;
 	  case Mile_Adjust:
 		  	  	  	  	  vTaskResume(MileageHandle);
-		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
+		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, 0);
 		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest-80);
 		  	  	  		  PWM_SET_RIGHT(-PWM_Lowest-80);
 		  	  	  		  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
