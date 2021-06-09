@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,6 +106,7 @@ UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+UART_HandleTypeDef huart6;
 
 osThreadId StreamHandle;
 osThreadId PIDCameraHandle;
@@ -114,6 +115,7 @@ osThreadId DistanceCheckHandle;
 osThreadId MileageHandle;
 osThreadId GoStraightHandle;
 osThreadId ColorcheckHandle;
+osThreadId WirelessHandle;
 osSemaphoreId CameraUARTSemHandle;
 osSemaphoreId GyroReadySemHandle;
 osSemaphoreId CriticalDistanceSemHandle;
@@ -154,8 +156,26 @@ uint8_t finalcolor;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�??????????????????????????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�????????????????????????????????????????????????????????????????????
 //PID PV END
+
+//HC_12_PV
+RTC_DateTypeDef datenow;
+RTC_TimeTypeDef timenow;
+
+uint8_t Tx_ATCHANNEL[] = "AT+C099\r\n";
+uint8_t Tx_team_name[] = "team32: che che\r\n";
+uint8_t Tx_str01[] = "2429410Z Yiyao Zhong\r\n";
+uint8_t Tx_str02[] = "2429513H Haiyang Hao\r\n";
+uint8_t Tx_str03[] = "2429453Y Chunlei Yu\r\n";
+uint8_t Tx_str04[] = "2429458Y Xiaoyu Yi\r\n";
+uint8_t Tx_str05[] = "2429488L Yunfei Ling\r\n";
+uint8_t Tx_str06[] = "2429494B Jinsong Bai\r\n";
+uint8_t Tx_str07[] = "2429459L Xiaoyuan Li\r\n";
+uint8_t Tx_str08[] = "2429491L Yuhan Li\r\n";
+uint8_t Tx_str09[] = "2429567W Aodong Wei\r\n";
+uint8_t Tx_str10[] = "2429264Y Jingxuan Yang\r\n";
+//HC_12_PV_END
 
 /* USER CODE END PV */
 
@@ -172,6 +192,7 @@ static void MX_TIM2_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_UART4_Init(void);
 static void MX_RTC_Init(void);
+static void MX_USART6_UART_Init(void);
 void StreamTask(void const * argument);
 void PIDCameraTask(void const * argument);
 void GyroReceiveTask(void const * argument);
@@ -179,6 +200,7 @@ void DistanceCheckTask(void const * argument);
 void MileageTask(void const * argument);
 void GoStraightTask(void const * argument);
 void ColorcheckTask(void const * argument);
+void WirelessTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void Car_Initial(void);
@@ -237,6 +259,7 @@ int main(void)
   MX_TIM8_Init();
   MX_UART4_Init();
   MX_RTC_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -320,6 +343,10 @@ int main(void)
   /* definition and creation of Colorcheck */
   osThreadDef(Colorcheck, ColorcheckTask, osPriorityNormal, 0, 128);
   ColorcheckHandle = osThreadCreate(osThread(Colorcheck), NULL);
+
+  /* definition and creation of Wireless */
+  osThreadDef(Wireless, WirelessTask, osPriorityNormal, 0, 128);
+  WirelessHandle = osThreadCreate(osThread(Wireless), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -840,6 +867,39 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 9600;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -855,6 +915,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4|LEDBlue_Pin|LEDGreen_Pin, GPIO_PIN_RESET);
@@ -902,8 +963,8 @@ void Car_Initial(void)
 	state=Initial;
 	temp_state = Unknow;
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�???????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,500);
@@ -1177,11 +1238,11 @@ float Ultrasonic_Feedback_right(void)
 //	uint8_t info=0xA0;
 //	uint8_t Rx_Buf[3]={0,0,0};
 //	uint32_t Data=0x00000000;
-//	Distance distance={0.0,0.0};//右侧超声波数�???????????
+//	Distance distance={0.0,0.0};//右侧超声波数�?????????????
 //
 //	uint8_t _Rx_Buf[3]={0,0,0};
 //	uint32_t _Data=0x00000000;
-//	Distance _distance={0.0,0.0};//前方超声波数�???????????
+//	Distance _distance={0.0,0.0};//前方超声波数�?????????????
 //
 //	                    float PID_target=0;
 //						float PID_Error_Last=0;
@@ -1605,13 +1666,35 @@ void feeding(void)
 	}
 }
 
+void sendall(void)
+{
+
+   printf("team32: che che\r\n2429410Z Yiyao Zhong\r\n2429513H Haiyang Hao\r2429453Y Chunlei Yu\r\n2429458Y Xiaoyu Yi\r\n2429488L Yunfei Ling\r\n2429494B Jinsong Bai\r\n2429459L Xiaoyuan Li\r\n2429491L Yuhan Li\r\n2429567W Aodong Wei\r\n2429264Y Jingxuan Yang\r\n");
+
+		HAL_RTC_GetTime(&hrtc,&timenow,RTC_FORMAT_BIN);//get the time from RTC as the real world time
+		HAL_RTC_GetDate(&hrtc,&datenow,RTC_FORMAT_BIN);//get the date from RTC as the real world time
+		taskENTER_CRITICAL();
+		printf("%02d/%02d/%02d \r\n", datenow.Year, datenow.Month, datenow.Date);	//print real time date to uart2
+		printf("%02d/%02d/%02d \r\n", timenow.Hours, timenow.Minutes, timenow.Seconds);//print real world time to uart2
+		taskEXIT_CRITICAL();
+}
+
+int fputc(int ch,FILE *fp)
+{
+//    while(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TXE) != SET);
+//    huart6.Instance->DR = ch & 0XFF;
+	uint8_t temp=ch;
+	HAL_UART_Transmit(&huart6, &temp, 1, 0xFFFF);
+    return ch;
+}
+
 uint8_t State_Transition(State* current_state)
 {
 	State next_state = Unknow;
 	switch(state)
 	{
 		case Initial:
-					next_state = Go_Mile_8_Until_Apriltag;
+					next_state = Go_Mile_1;
 					break;
 		case Line_Search:
 					if(distance_flag==0)
@@ -1815,6 +1898,9 @@ uint8_t State_Transition(State* current_state)
 					break;
 		case Feeding:
 					next_state=Go_Mile_9;
+					break;
+		case Communication:
+					next_state=Communication;
 					break;
 		case Mile_Adjust:
 					switch (temp_state)
@@ -2505,6 +2591,9 @@ void StreamTask(void const * argument)
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  feeding();
 		  	  	  	  	  break;
+	  case Communication:
+		  	  	  	  	  vTaskResume(WirelessHandle);
+		  	  	  	  	  break;
 	  case Mile_Adjust:
 		  	  	  	  	  vTaskResume(MileageHandle);
 		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, 0);
@@ -2800,6 +2889,38 @@ void ColorcheckTask(void const * argument)
 
 
   /* USER CODE END ColorcheckTask */
+}
+
+/* USER CODE BEGIN Header_WirelessTask */
+/**
+* @brief Function implementing the Wireless thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_WirelessTask */
+void WirelessTask(void const * argument)
+{
+  /* USER CODE BEGIN WirelessTask */
+	uint8_t Wireless_Rx[1];
+	uint8_t test_data=0x53;
+	vTaskSuspend(WirelessHandle);
+  /* Infinite loop */
+	for(;;){
+			//HAL_UART_Transmit(&huart6,&test_data,1,0xFFFF);//retransmission part
+			sendall(); //first transmission
+//			HAL_UART_Receive(&huart6,Wireless_Rx,1,10000);//retransmission part
+//			if (Wireless_Rx[0]==NULL)
+//			{
+//				printf("go ahead\n");
+//			}
+//			else
+//			{
+//				sendall();
+//			}
+			HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
+			delay(1000);
+	}
+  /* USER CODE END WirelessTask */
 }
 
  /**
