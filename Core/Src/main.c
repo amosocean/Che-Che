@@ -77,6 +77,7 @@ typedef struct Distance
 	float  front;
 	float  right;
 } Distance;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -1679,14 +1680,26 @@ void sendall(void)
 		taskEXIT_CRITICAL();
 }
 
-int fputc(int ch,FILE *fp)
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
+
+PUTCHAR_PROTOTYPE
 {
-//    while(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TXE) != SET);
-//    huart6.Instance->DR = ch & 0XFF;
-	uint8_t temp=ch;
-	HAL_UART_Transmit(&huart6, &temp, 1, 0xFFFF);
+	HAL_UART_Transmit(&huart6, (uint8_t*)&ch,1,HAL_MAX_DELAY);
     return ch;
 }
+
+//int fputc(int ch,FILE *fp)
+//{
+////    while(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TXE) != SET);
+////    huart6.Instance->DR = ch & 0XFF;
+//	uint8_t temp=ch;
+//	HAL_UART_Transmit(&huart6, &temp, 1, 0xFFFF);
+//    return ch;
+//}
 
 uint8_t State_Transition(State* current_state)
 {
