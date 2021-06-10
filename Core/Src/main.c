@@ -155,25 +155,12 @@ uint8_t finalcolor;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�????????????????????????????????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????????????????????????????????????????????
 //PID PV END
 
 //HC_12_PV
 RTC_DateTypeDef datenow;
 RTC_TimeTypeDef timenow;
-
-uint8_t Tx_ATCHANNEL[] = "AT+C099\r\n";
-uint8_t Tx_team_name[] = "team32: che che\r\n";
-uint8_t Tx_str01[] = "2429410Z Yiyao Zhong\r\n";
-uint8_t Tx_str02[] = "2429513H Haiyang Hao\r\n";
-uint8_t Tx_str03[] = "2429453Y Chunlei Yu\r\n";
-uint8_t Tx_str04[] = "2429458Y Xiaoyu Yi\r\n";
-uint8_t Tx_str05[] = "2429488L Yunfei Ling\r\n";
-uint8_t Tx_str06[] = "2429494B Jinsong Bai\r\n";
-uint8_t Tx_str07[] = "2429459L Xiaoyuan Li\r\n";
-uint8_t Tx_str08[] = "2429491L Yuhan Li\r\n";
-uint8_t Tx_str09[] = "2429567W Aodong Wei\r\n";
-uint8_t Tx_str10[] = "2429264Y Jingxuan Yang\r\n";
 //HC_12_PV_END
 
 /* USER CODE END PV */
@@ -457,8 +444,8 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0x0;
-  sTime.Minutes = 0x0;
+  sTime.Hours = 0x9;
+  sTime.Minutes = 0x30;
   sTime.Seconds = 0x0;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
@@ -466,10 +453,10 @@ static void MX_RTC_Init(void)
   {
     Error_Handler();
   }
-  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-  sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
+  sDate.WeekDay = RTC_WEEKDAY_SUNDAY;
+  sDate.Month = RTC_MONTH_JUNE;
+  sDate.Date = 0x20;
+  sDate.Year = 0x21;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
@@ -910,8 +897,8 @@ void Car_Initial(void)
 	state=Initial;
 	temp_state = Unknow;
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,1000);
@@ -1224,11 +1211,11 @@ float Ultrasonic_Feedback_right(void)
 //	uint8_t info=0xA0;
 //	uint8_t Rx_Buf[3]={0,0,0};
 //	uint32_t Data=0x00000000;
-//	Distance distance={0.0,0.0};//右侧超声波数�?????????????????
+//	Distance distance={0.0,0.0};//右侧超声波数�??????????????????
 //
 //	uint8_t _Rx_Buf[3]={0,0,0};
 //	uint32_t _Data=0x00000000;
-//	Distance _distance={0.0,0.0};//前方超声波数�?????????????????
+//	Distance _distance={0.0,0.0};//前方超声波数�??????????????????
 //
 //	                    float PID_target=0;
 //						float PID_Error_Last=0;
@@ -1663,7 +1650,7 @@ void sendall(void)
 		HAL_RTC_GetDate(&hrtc,&datenow,RTC_FORMAT_BIN);//get the date from RTC as the real world time
 		taskENTER_CRITICAL();
 		printf("%02d/%02d/%02d \r\n", datenow.Year, datenow.Month, datenow.Date);	//print real time date to uart2
-		printf("%02d/%02d/%02d \r\n", timenow.Hours, timenow.Minutes, timenow.Seconds);//print real world time to uart2
+		printf("%02d:%02d:%02d \r\n", timenow.Hours, timenow.Minutes, timenow.Seconds);//print real world time to uart2
 		taskEXIT_CRITICAL();
 }
 
@@ -1694,7 +1681,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Communication;
+					next_state = Go_Mile_1;
 					break;
 		case TurnRight1_1:
 					next_state = Go_Mile_2_1;
@@ -1732,132 +1719,58 @@ uint8_t State_Transition(State* current_state)
 		case TurnRight8:
 					next_state = Go_Mile_10;
 					break;
-		//case GoStraight_Until_Barrier:
-					//osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
-//					if(distance_flag==0)
-//						next_state = GoStraight_Until_Barrier;
-//					else
-//						next_state = TurnRight;
-			        //next_state = TurnRight5;
-					//break;
 		case Go_Mile_1:
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
 					break;
 		case Go_Mile_2_1:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight2_1;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
 		case Go_Mile_2_2:
-					if(*current_state == Mile_Adjust)
-						next_state = Go_Mile_4;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
 		case Go_Mile_2_3:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight2_3;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
 
 		case Go_Mile_3_1:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight3_1;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
-
 		case Go_Mile_3_3:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight3_3;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
-
 		case Go_Mile_4:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight4;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
 		case GoStraight_Until_Barrier:
-					//if(*current_state == Mile_Adjust)
 						next_state = TurnRight5;
-//					else
-//						{
-//						temp_state = *current_state;
-//						next_state = Mile_Adjust;
-//						}
 					break;
 		case Go_Mile_6:
-					//if(*current_state == Mile_Adjust)
 						next_state = Go_Mile_6_7;
-					/*else
-						{
-						temp_state = *current_state;
-						next_state = Mile_Adjust;
-						}*/
 					 break;
 		case Go_Mile_6_7:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight6;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
 		case Go_Mile_7:
-//					if(*current_state == Mile_Adjust)
 						next_state = TurnRight7;
-//					else
-//						{
-//						temp_state = *current_state;
-//						next_state = Mile_Adjust;
-//						}
 					break;
 		case Go_Mile_8_Until_Apriltag:
 					next_state=Apriltag_Check;
 					break;
 		case Go_Mile_9:
-					if(*current_state == Mile_Adjust)
-						next_state = TurnRight8;
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
-//		case Go_Mile_10:
-//					if(*current_state == Mile_Adjust)
-//						next_state = Idle;
-//					else
-//						{
-//						temp_state = *current_state;
-//						next_state = Mile_Adjust;
-//						}
-//					break;
+		case Go_Mile_10:
+					next_state=Communication;
+					break;
 		case Apriltag_Adjust1:
 					next_state = Feeding;
 					break;
@@ -1932,7 +1845,6 @@ uint8_t State_Transition(State* current_state)
 						next_state = Initial;
 						break;
 					}
-					//temp_state = Mile_Adjust;
 					break;
 		default:
 					next_state = Initial;
