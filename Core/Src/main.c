@@ -1870,8 +1870,8 @@ void PIDCameraTask(void const * argument)
 	  	 //Data=0x03E8;
 	  	 //PID_Input=0;
 	  	 PID_Input = (Camera_Data & (0x07FF))-1000;
-	  	 if (PID_Input == -1000)
-	  		 continue;
+//	  	 if (PID_Input == -1000)
+//	  		 continue;
 	  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
 	  	 Error_Total=Error_Total+Ki*Error;
 	  	 PID_Output = Kp * Error  +
