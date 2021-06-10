@@ -1349,20 +1349,6 @@ void StreamTask(void const * argument)
 		  	  	  	  	  Car_Initial();
 		  	  	  	  	  break;
 	  case Line_Search:
-//		  		  	  	  delay(500);
-//		  		  	  	  critical_distance.front=150;
-//		  		  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-//		  		  	  	  vTaskResume(MileageHandle);
-//		  		  	  	  vTaskResume(LineSearchHandle);
-//		  		  	  	  //vTaskResume(DistanceCheckHandle);
-//		  		  	  	  delay(1500);
-//		  		  	  	  vTaskResume(LineSearchHandle);
-//		  		  	  	  delay(2000);
-//		  		  	  	  //delay(300000);
-//		  		  	  	  osSemaphoreWait(ApriltagSemHandle, 0);
-//		  		  	  	  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
-//		  		  	  	  vTaskDelete(LineSearchHandle);
-//		  	  	  	  	  break;
 		  	  	  	  	  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 		  	  	  	  	  vTaskResume(PIDCameraHandle);
 		  	  	  	  	  //delay(600000);
@@ -1375,14 +1361,6 @@ void StreamTask(void const * argument)
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
 	  case Line_Search2:
-//		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-//		  	  	  	  	  vTaskSuspend(GyroReceiveHandle);
-//		  	  	  	  	  vTaskSuspend(GoStraightHandle);
-//		  	  	  	  	  vTaskResume(MileageHandle);
-//		  		  	  	  delay(500);
-//		  		  	  	  critical_distance.front=350;
-//		  		  	  	  vTaskResume(LineSearch2Handle);
-//		  		  	  	  delay(50000);
 						  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 						  vTaskResume(PIDCamera2Handle);
 						  delay(60000);
@@ -1399,11 +1377,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case Cross_bridge:
 		  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  //pulse_incremnet=2400;//室外
-						  //pulse_incremnet=600; //小正方形
-
-		  	  	  	  	  pulse_incremnet=1500;//上下�???????
+		  	  	  	  	  pulse_incremnet=1500;//Go on the bridge
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
