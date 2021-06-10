@@ -77,7 +77,6 @@ typedef struct Distance
 	float  front;
 	float  right;
 } Distance;
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -87,7 +86,7 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 800  //无反馈时电机工作占空
+#define PWM_Mid 1200  //无反馈时电机工作占空
 #define PWM_Lowest 500
 #define PWM_Higest 1400 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
@@ -1044,7 +1043,8 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 	float initial_yaw=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
-	float KP=13, KI=2, KD=0;
+	float KP=8, KI=2, KD=1;
+	//13 2 0.5
 	//15 2 0
 	int t=0;
 	float pwm_left=0,pwm_right=0;
@@ -1680,26 +1680,14 @@ void sendall(void)
 		taskEXIT_CRITICAL();
 }
 
-#ifdef __GNUC__
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-#endif
-
-PUTCHAR_PROTOTYPE
+int fputc(int ch,FILE *fp)
 {
-	HAL_UART_Transmit(&huart6, (uint8_t*)&ch,1,HAL_MAX_DELAY);
+//    while(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TXE) != SET);
+//    huart6.Instance->DR = ch & 0XFF;
+	uint8_t temp=ch;
+	HAL_UART_Transmit(&huart6, &temp, 1, 0xFFFF);
     return ch;
 }
-
-//int fputc(int ch,FILE *fp)
-//{
-////    while(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TXE) != SET);
-////    huart6.Instance->DR = ch & 0XFF;
-//	uint8_t temp=ch;
-//	HAL_UART_Transmit(&huart6, &temp, 1, 0xFFFF);
-//    return ch;
-//}
 
 uint8_t State_Transition(State* current_state)
 {
@@ -1707,7 +1695,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Go_Mile_1;
+					next_state = Go_Mile_6;
 					break;
 		case Line_Search:
 					if(distance_flag==0)
@@ -2227,7 +2215,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  //state= GoStraight;
-		  	  	  	  	  critical_distance.front=350;
+		  	  	  	  	  critical_distance.front=250;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
@@ -2263,7 +2251,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_1:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=200;//室外
+						  pulse_incremnet=2150;//室外
 						  //pulse_incremnet=600; //小正方形
 						  camera_recieve_IT_flag=1;
 						  vTaskResume(ColorcheckHandle);
@@ -2292,7 +2280,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_2_1:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
+						  pulse_incremnet=1450;//室外
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
@@ -2316,7 +2304,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_2_2:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
+						  pulse_incremnet=2500;//室外
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
@@ -2340,7 +2328,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_2_3:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
+						  pulse_incremnet=1450;//室外
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
@@ -2365,7 +2353,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_3_1:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
+						  pulse_incremnet=1450;//室外
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
@@ -2389,7 +2377,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_3_3:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
+						  pulse_incremnet=1450;//室外
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
@@ -2413,7 +2401,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_4:
 	  					  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=200;//室外
+						  pulse_incremnet=2500;//室外
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
