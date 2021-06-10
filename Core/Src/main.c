@@ -141,12 +141,12 @@ Distance front_distance={0.0,0.0};
 int distance_flag=0;
 int camera_recieve_IT_flag=0;
 int gyro_reset_flag=0;
-int go_straight_speed=PWM_Mid;
+int Global_go_straight_speed=PWM_Mid;
 //Encoder PV
 int32_t mileage_IT_number=-1;
 //uint8_t direction;
-int32_t number_of_pulses=0;
-int32_t critical_pulses=0;
+int32_t Global_number_of_pulses=0;
+int32_t Global_critical_pulses=0;
 int PID_Straight_Reset_Flag=1;
 int info=0xA0;
 uint16_t blue=0, pink=0, yellow=0;
@@ -928,6 +928,44 @@ void Car_Stop(void)
 	taskEXIT_CRITICAL();
 }
 
+void Car_Turning(float increment_angle,float Accept_Error)
+{
+  	  	  vTaskSuspend(DistanceCheckHandle);
+	  	  vTaskSuspend(GoStraightHandle);
+	  	  vTaskSuspend(MileageHandle);
+  	  	  Car_Stop();
+  	  	  delay(50);
+  	  	  distance_flag=0;
+  	  	  gyro_reset_flag=0;
+	  	  vTaskResume(GyroReceiveHandle);
+	  	  delay(500);
+	  	  PID_Turning(increment_angle,20);
+	  	  gyro_reset_flag=1;
+	  	  Car_Stop();
+}
+
+void Car_Go_Mile(uint32_t pulse_incremnet,int speed)
+{
+	  	  Global_critical_pulses=pulse_incremnet+Global_number_of_pulses;
+		  gyro_reset_flag=0;
+		  vTaskResume(GyroReceiveHandle);
+		  vTaskResume(MileageHandle);
+		  delay(100);
+		  osSemaphoreWait(MileageSemHandle, 0);
+		  PID_Straight_Reset_Flag=1;
+	  	  Global_go_straight_speed=speed;
+	  	  vTaskResume(GoStraightHandle);
+	  	  delay(200);
+	  	  PID_Straight_Reset_Flag=0;
+	      osSemaphoreWait(MileageSemHandle, osWaitForever);
+	      PID_Straight_Reset_Flag=1;
+	      vTaskSuspend(GoStraightHandle);
+	      camera_recieve_IT_flag=0;
+		  Car_Stop();
+		  gyro_reset_flag=1;
+		  vTaskSuspend(MileageHandle);
+}
+
 void delay(uint32_t time_ms)
 {
 	uint32_t PreviousWakeTime=osKernelSysTick();
@@ -1487,10 +1525,10 @@ void stepping(void)
     	  {
     		  return;
     	  }
-		  critical_pulses=0;
+		  Global_critical_pulses=0;
 		  vTaskResume(MileageHandle);
 		  //osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  critical_pulses=pulse_increment+number_of_pulses;
+		  Global_critical_pulses=pulse_increment+Global_number_of_pulses;
 	  	  vTaskSuspend(PIDCameraHandle);
 	  	  //vTaskResume(GyroReceiveHandle);
 	  	  //PID_Straight_Reset_Flag=1;
@@ -1522,7 +1560,8 @@ void stepping(void)
 //         if(error>0)
 //	     {
 	    	 PWM=Kp*error;
-	    	 PWM = PWM > 250 ? 250 : PWM;
+	    	 PWM = PWM >  250 ? 250 : PWM;
+	    	 PWM = PWM < -250 ? -250 : PWM;
 	    	 pwm_right = -PWM;
 	    	 pwm_left = PWM;
 			 taskENTER_CRITICAL();
@@ -1551,10 +1590,10 @@ void stepping2(void)
      for(int i=0;;i++)
      {
 
-		  critical_pulses=0;
+		  Global_critical_pulses=0;
 		  vTaskResume(MileageHandle);
 		  //osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  critical_pulses=pulse_increment+number_of_pulses;
+		  Global_critical_pulses=pulse_increment+Global_number_of_pulses;
 	  	  vTaskSuspend(PIDCameraHandle);
 	  	  //vTaskResume(GyroReceiveHandle);
 	  	  //PID_Straight_Reset_Flag=1;
@@ -1591,7 +1630,8 @@ void stepping2(void)
 	     else
 	     {
 	    	 PWM=Kp*error;
-	    	 PWM = PWM > 250 ? 250 : PWM;
+	    	 PWM = PWM >  250 ? 250 : PWM;
+	    	 PWM = PWM < -250 ? -250 : PWM;
 	    	 pwm_right = -PWM;
 	    	 pwm_left = PWM;
 			 taskENTER_CRITICAL();
@@ -1964,189 +2004,44 @@ void StreamTask(void const * argument)
 		  	  	  	  	  //vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  break;
 	  case TurnRight:
-	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+		  	  	  	  	  Car_Turning(-90,2);
+		  	  	  	  	  break;
 	  case TurnRight1_1:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(45,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(45,2);
+						  break;
 	  case TurnRight1_2:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(90,2);
+						  break;
 	  case TurnRight1_3:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(135,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(135,2);
+						  break;
 	  case TurnRight2_1:
-	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(90,2);
+						  break;
 	  case TurnRight2_3:
-	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(-90,2);
+						  break;
 	  case TurnRight3_1:
-	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-45,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(-45,2);
+						  break;
 	  case TurnRight3_3:
-	  	  	  	  	  	  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(45,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(45,2);
+						  break;
 	  case TurnRight4:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(-90,2);
+						  break;
 	  case TurnRight5:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(90,2);
+						  break;
 	  case TurnRight6:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
+						  Car_Turning(-90,2);
+						  break;
 	  case TurnRight7:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
-
+						  Car_Turning(90,2);
+						  break;
 	  case TurnRight8:
-						  vTaskSuspend(DistanceCheckHandle);
-		  		  	  	  vTaskSuspend(GoStraightHandle);
-		  		  	  	  vTaskSuspend(MileageHandle);
-	  	  	  	  	  	  Car_Stop();
-	  	  	  	  	  	  delay(50);
-	  	  	  	  	  	  distance_flag=0;
-	  	  	  	  	  	  gyro_reset_flag=0;
-		  	  	  	  	  vTaskResume(GyroReceiveHandle);
-		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(90,2);
-		  	  	  	  	  gyro_reset_flag=1;
-		  	  	  	  	  Car_Stop();
-		  		  	  	  break;
-
+						  Car_Turning(90,2);
+						  break;
 	  case GoStraight_Until_Barrier:
 		  	  	  	  	  //state= Idle;
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
@@ -2170,13 +2065,13 @@ void StreamTask(void const * argument)
 						  //pulse_incremnet=600; //小正方形
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
+						  Global_critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(500);
 						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
+						  Global_critical_pulses=pulse_incremnet+Global_number_of_pulses;
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
+		  	  	  	  	  Global_go_straight_speed=PWM_Mid;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
@@ -2197,13 +2092,13 @@ void StreamTask(void const * argument)
 						  vTaskResume(ColorcheckHandle);
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
+						  Global_critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(500);
 						  osSemaphoreWait(MileageSemHandle, 0);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
+						  Global_critical_pulses=pulse_incremnet+Global_number_of_pulses;
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
+		  	  	  	  	  Global_go_straight_speed=PWM_Mid;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
@@ -2215,168 +2110,33 @@ void StreamTask(void const * argument)
 		  	  	  	      color_judge();
 		  	  	  		  Car_Stop();
 		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
+		  	  	  		  vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Go_Mile_2_1:
-						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=1450;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
+		  	  	  	  	  Car_Go_Mile(1450, PWM_Mid);
 		  	  	  	  	  break;
 	  case Go_Mile_2_2:
-						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=2500;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
+	  	  	  	  	  	  Car_Go_Mile(2500, PWM_Mid);
+	  	  	  	  	  	  break;
 	  case Go_Mile_2_3:
-						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=1450;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
-
+	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid);
+	  	  	  	  	  	  break;
 	  case Go_Mile_3_1:
-						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=1450;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
+  	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid);
+  	  	  	  	  	  	  break;
 	  case Go_Mile_3_3:
-						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=1450;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
+						  Car_Go_Mile(1450, PWM_Mid);
+						  break;
 	  case Go_Mile_4:
-	  					  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=2500;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
+						  Car_Go_Mile(2500, PWM_Mid);
+						  break;
 	  case Go_Mile_5:
-						  //vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  //pulse_incremnet=0;//室外
-						  //pulse_incremnet=600; //小正方形
 		                  Ultrasonic_Feedback_front();
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
-						  //critical_pulses=0;
-						  //vTaskResume(MileageHandle);
 						  delay(500);
-						  //osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  //critical_pulses=pulse_incremnet+number_of_pulses;
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
+		  	  	  	  	  Global_go_straight_speed=PWM_Mid;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
 		  	  	  	  	  PID_Straight_Reset_Flag=0;
@@ -2385,54 +2145,26 @@ void StreamTask(void const * argument)
 		  	  	  	      vTaskSuspend(GoStraightHandle);
 		  	  	  		  Car_Stop();
 		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Go_Mile_6:
 	  	  	              vTaskSuspend(GyroReceiveHandle);
-		                  critical_pulses=0;
-	  	  	              vTaskSuspend(PIDCameraHandle);
+		                  Global_critical_pulses=0;
 	  	  	              vTaskSuspend(DistanceCheckHandle);
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
-		  	  	  	  	  //state= GoStraight;
-		  	  	  	  	  //critical_distance.front=350;
-		  	  	  	  	  //vTaskResume(DistanceCheckHandle);
 		  	  	  	      distance_flag=0;
 	  	                  stepping2();
 		  	  	  	      Car_Stop();
 	  		              vTaskSuspend(GyroReceiveHandle);
 	  		              break;
 	  case Go_Mile_6_7:
-	  					  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=100;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
+		  	  	  	  	  Car_Go_Mile(100, PWM_Mid);
 		  	  	  	  	  break;
 	  case Go_Mile_7:
 	  	  	              vTaskSuspend(GyroReceiveHandle);
-		                  critical_pulses=0;
-	  	  	              vTaskSuspend(PIDCameraHandle);
+		                  Global_critical_pulses=0;
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
-		  	  	  	  	  //state= GoStraight;
 		  	  	  	  	  critical_distance.front=350;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	      distance_flag=0;
@@ -2449,7 +2181,7 @@ void StreamTask(void const * argument)
 						  vTaskResume(GyroReceiveHandle);
 						  delay(500);
 						  PID_Straight_Reset_Flag=1;
-						  go_straight_speed=PWM_Mid-200;
+						  Global_go_straight_speed=PWM_Mid-200;
 						  vTaskResume(GoStraightHandle);
 						  delay(500);
 						  PID_Straight_Reset_Flag=0;
@@ -2465,54 +2197,11 @@ void StreamTask(void const * argument)
 						  //vTaskSuspend(MileageHandle);
 						  break;
 	  case Go_Mile_9:
-		  	  	  	  	  camera_recieve_IT_flag=0;
-						  vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
+  	  	  	  	  	  	  Car_Go_Mile(300, PWM_Mid);
+  	  	  	  	  	  	  break;
 	  case Go_Mile_10:
-						 vTaskSuspend(DistanceCheckHandle);
-						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=300;//室外
-						  //pulse_incremnet=600; //小正方形
-						  gyro_reset_flag=0;
-						  vTaskResume(GyroReceiveHandle);
-						  critical_pulses=0;
-						  vTaskResume(MileageHandle);
-						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
-						  critical_pulses=pulse_incremnet+number_of_pulses;
-		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=PWM_Mid;
-		  	  	  	  	  vTaskResume(GoStraightHandle);
-		  	  	  	  	  delay(200);
-		  	  	  	  	  PID_Straight_Reset_Flag=0;
-		  	  	  	      osSemaphoreWait(MileageSemHandle, osWaitForever);
-		  	  	  	      PID_Straight_Reset_Flag=1;
-		  	  	  	      vTaskSuspend(GoStraightHandle);
-		  	  	  		  Car_Stop();
-		  	  	  		  gyro_reset_flag=1;
-		  	  	  		  //vTaskSuspend(MileageHandle);
-		  	  	  	  	  break;
+  	  	  	  	  	  	  Car_Go_Mile(3550, PWM_Mid);
+  	  	  	  	  	  	  break;
 	  case Apriltag_Check:
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
@@ -2751,10 +2440,10 @@ void MileageTask(void const * argument)
 	  //taskENTER_CRITICAL();
 	  //mileage_counter=__HAL_TIM_GET_COUNTER(&htim2);
 	  //number_of_pulses=1000*(mileage_IT_number-1)+mileage_counter;
-	  number_of_pulses=5000*mileage_IT_number+__HAL_TIM_GET_COUNTER(&htim2);
+	  Global_number_of_pulses=5000*mileage_IT_number+__HAL_TIM_GET_COUNTER(&htim2);
 	  //taskEXIT_CRITICAL();
 	  //HAL_UART_Transmit(&huart1, &number_of_pulses, sizeof(number_of_pulses), 1000);
-	  if (number_of_pulses>critical_pulses)
+	  if (Global_number_of_pulses>Global_critical_pulses)
 		  osSemaphoreRelease(MileageSemHandle);
 	  else
 		  osSemaphoreRelease(MileageNegSemHandle);
@@ -2782,7 +2471,7 @@ void GoStraightTask(void const * argument)
   {
 	if (PID_Straight_Reset_Flag)
 		continue;
-	PID_Straight((float)go_straight_speed);
+	PID_Straight((float)Global_go_straight_speed);
     delay(100);
   }
   /* USER CODE END GoStraightTask */
