@@ -926,7 +926,7 @@ void Car_Turning(float increment_angle,float Accept_Error)
   	  	  gyro_reset_flag=0;
 	  	  vTaskResume(GyroReceiveHandle);
 	  	  delay(500);
-	  	  PID_Turning(increment_angle,20);
+	  	  PID_Turning(increment_angle,Accept_Error);
 	  	  gyro_reset_flag=1;
 	  	  Car_Stop();
 }
