@@ -1010,7 +1010,7 @@ float PID_Line_Follow(float Accept_Error)
 int PID_Apriltag(float Accept_Error)
 {
 
-	float PID_target=0;
+	float PID_target=-30;
 	float PID_Error_Last=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
@@ -1870,8 +1870,8 @@ void PIDCameraTask(void const * argument)
 	  	 //Data=0x03E8;
 	  	 //PID_Input=0;
 	  	 PID_Input = (Camera_Data & (0x07FF))-1000;
-//	  	 if (PID_Input == -1000)
-//	  		 continue;
+	  	 if (PID_Input == -1000)
+	  		 continue;
 	  	 Error = PID_Target - PID_Input;		  // 偏差 = 目标 - 实际
 	  	 Error_Total=Error_Total+Ki*Error;
 	  	 PID_Output = Kp * Error  +
@@ -1910,7 +1910,7 @@ void PIDCamera2Task(void const * argument)
 		float Error = 0, Error_Total=0;
 		int32_t PID_Input=0;
 		float PID_Target=0;
-		float Kp=2,Ki=0.1,Kd=0.2;
+		float Kp=2,Ki=0.07,Kd=3;
 		float pwm_left=0,pwm_right=0;
   /* Infinite loop */
   for(;;)
