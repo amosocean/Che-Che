@@ -87,7 +87,7 @@ typedef struct Distance
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define PWM_Mid 1200  //无反馈时电机工作占空
-#define PWM_Lowest 500
+#define PWM_Lowest 150
 #define PWM_Higest 1400 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 #define PWM_Bias 0.9331
@@ -99,7 +99,6 @@ RTC_HandleTypeDef hrtc;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart5;
@@ -156,7 +155,7 @@ uint8_t finalcolor;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�????????????????????????????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�????????????????????????????????????????????????????????????????????????
 //PID PV END
 
 //HC_12_PV
@@ -189,7 +188,6 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_UART5_Init(void);
 static void MX_TIM2_Init(void);
-static void MX_TIM8_Init(void);
 static void MX_UART4_Init(void);
 static void MX_RTC_Init(void);
 static void MX_USART6_UART_Init(void);
@@ -256,7 +254,6 @@ int main(void)
   MX_USART3_UART_Init();
   MX_UART5_Init();
   MX_TIM2_Init();
-  MX_TIM8_Init();
   MX_UART4_Init();
   MX_RTC_Init();
   MX_USART6_UART_Init();
@@ -503,7 +500,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 3;
+  htim2.Init.Prescaler = 4-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 5000-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -516,7 +513,7 @@ static void MX_TIM2_Init(void)
   sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 1;
+  sConfig.IC2Filter = 2;
   if (HAL_TIM_Encoder_Init(&htim2, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -648,56 +645,6 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
-
-}
-
-/**
-  * @brief TIM8 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM8_Init(void)
-{
-
-  /* USER CODE BEGIN TIM8_Init 0 */
-
-  /* USER CODE END TIM8_Init 0 */
-
-  TIM_Encoder_InitTypeDef sConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM8_Init 1 */
-
-  /* USER CODE END TIM8_Init 1 */
-  htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 3;
-  htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 150;
-  htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim8.Init.RepetitionCounter = 0;
-  htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim8, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM8_Init 2 */
-
-  /* USER CODE END TIM8_Init 2 */
 
 }
 
@@ -963,11 +910,11 @@ void Car_Initial(void)
 	state=Initial;
 	temp_state = Unknow;
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
-	__HAL_TIM_SET_COUNTER(&htim2,500);
+	__HAL_TIM_SET_COUNTER(&htim2,1000);
 	HAL_TIM_Base_Start_IT(&htim2);
 	//vTaskSuspend(UART_RTHandle);//Suspend UART R and T
 	//vTaskSuspend(PIDCameraHandle);//Suspend PID module
@@ -1239,11 +1186,11 @@ float Ultrasonic_Feedback_right(void)
 //	uint8_t info=0xA0;
 //	uint8_t Rx_Buf[3]={0,0,0};
 //	uint32_t Data=0x00000000;
-//	Distance distance={0.0,0.0};//右侧超声波数�?????????????
+//	Distance distance={0.0,0.0};//右侧超声波数�?????????????????
 //
 //	uint8_t _Rx_Buf[3]={0,0,0};
 //	uint32_t _Data=0x00000000;
-//	Distance _distance={0.0,0.0};//前方超声波数�?????????????
+//	Distance _distance={0.0,0.0};//前方超声波数�?????????????????
 //
 //	                    float PID_target=0;
 //						float PID_Error_Last=0;
@@ -1707,7 +1654,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Go_Mile_6;
+					next_state = Go_Mile_1;
 					break;
 		case Line_Search:
 					if(distance_flag==0)
@@ -1763,28 +1710,8 @@ uint8_t State_Transition(State* current_state)
 			        //next_state = TurnRight5;
 					//break;
 		case Go_Mile_1:
-					if(*current_state == Mile_Adjust)
-		                switch(finalcolor)
-		                {
-		                case 1:
-		                	next_state = TurnRight1_3;
-		                	break;
-		                case 2:
-		                	next_state = TurnRight1_1;
-		                	break;
-		                case 3:
-		                	next_state = TurnRight1_2;
-		                	break;
-		                default:
-		                	break;
-		                }
-
-
-					else
-						{
 						temp_state = *current_state;
 						next_state = Mile_Adjust;
-						}
 					break;
 		case Go_Mile_2_1:
 					if(*current_state == Mile_Adjust)
@@ -1933,7 +1860,7 @@ uint8_t State_Transition(State* current_state)
 		                default:
 		                	break;
 		                }
-						break;
+					break;
 					case Go_Mile_2_1:
 						next_state = TurnRight2_1;
 						break;
@@ -2263,16 +2190,17 @@ void StreamTask(void const * argument)
 	  case Go_Mile_1:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=2150;//室外
-						  //pulse_incremnet=600; //小正方形
+						  pulse_incremnet=2150;//实测
+						  //pulse_incremnet=100; //小正方形
 						  camera_recieve_IT_flag=1;
+						  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
 						  vTaskResume(ColorcheckHandle);
 						  gyro_reset_flag=0;
 						  vTaskResume(GyroReceiveHandle);
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(500);
-						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+						  osSemaphoreWait(MileageSemHandle, 0);
 						  critical_pulses=pulse_incremnet+number_of_pulses;
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
 		  	  	  	  	  go_straight_speed=PWM_Mid;
@@ -2610,10 +2538,13 @@ void StreamTask(void const * argument)
 	  case Mile_Adjust:
 		  	  	  	  	  vTaskResume(MileageHandle);
 		  	  	  	  	  osSemaphoreWait(MileageNegSemHandle, 0);
+		  	  	  	  	  Car_Stop();
+		  	  	  	  	  delay(500);
 		  	  	  	  	  PWM_SET_LEFT(-PWM_Lowest-80);
 		  	  	  		  PWM_SET_RIGHT(-PWM_Lowest-80);
 		  	  	  		  osSemaphoreWait(MileageNegSemHandle, osWaitForever);
 		  	  	  		  Car_Stop();
+		  	  	  		  delay(1000);
 		  	  	  		  vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Idle:
@@ -2817,11 +2748,11 @@ void MileageTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  taskENTER_CRITICAL();
+	  //taskENTER_CRITICAL();
 	  //mileage_counter=__HAL_TIM_GET_COUNTER(&htim2);
 	  //number_of_pulses=1000*(mileage_IT_number-1)+mileage_counter;
 	  number_of_pulses=5000*mileage_IT_number+__HAL_TIM_GET_COUNTER(&htim2);
-	  taskEXIT_CRITICAL();
+	  //taskEXIT_CRITICAL();
 	  //HAL_UART_Transmit(&huart1, &number_of_pulses, sizeof(number_of_pulses), 1000);
 	  if (number_of_pulses>critical_pulses)
 		  osSemaphoreRelease(MileageSemHandle);
@@ -2955,7 +2886,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   else if(htim->Instance==TIM2)
   	{
-		if(__HAL_TIM_GET_COUNTER(&htim2)>3000)
+		if(__HAL_TIM_GET_COUNTER(&htim2)>4000)
 	    	mileage_IT_number--;
 	   	else
   		mileage_IT_number++;
