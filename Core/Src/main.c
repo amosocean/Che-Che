@@ -910,7 +910,7 @@ void PID_Straight(float speed)
 					float initial_yaw=0;
 					float PID_Output=0,PID_Input=0;
 					float Error = 0, Error_Total=0,Error_Total_Total=0;
-					float KP=10, KI=3, KD=5, KI2=0.013;
+					float KP=15, KI=6, KD=10, KI2=0.013;
 					int32_t pwm_right=0;
 					int32_t pwm_left=0;
 					//uint8_t Flag=0; //Indicate that if verifying process begin.
@@ -1355,13 +1355,14 @@ void StreamTask(void const * argument)
 		  	  	  	  	  osSemaphoreWait(ApriltagSemHandle, 0);
 		  	  	  	  	  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
-		  	  	  	  	  PWM_SET_LEFT(PWM_Mid-100);
-		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid-100);
-		  	  	  	  	  delay(1200);
+		  	  	  	  	  PWM_SET_LEFT(PWM_Mid-300);
+		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid-300);
+		  	  	  	  	  delay(1800);
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
 	  case Line_Search2:
 						  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
+						  delay(1000);
 						  vTaskResume(PIDCamera2Handle);
 						  delay(60000);
 		  	  	  	  	  break;
@@ -1493,11 +1494,13 @@ void StreamTask(void const * argument)
 						  PID_Straight_Reset_Flag=0;
 						  osSemaphoreWait(ApriltagSemHandle, 0);
 						  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
+						  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
+						  osSemaphoreWait(ApriltagSemHandle, osWaitForever);
 						  PID_Straight_Reset_Flag=1;
 						  vTaskSuspend(GoStraightHandle);
-						  PWM_SET_LEFT(PWM_Mid-100);
-						  PWM_SET_RIGHT(PWM_Mid-100);
-						  delay(1200);
+//						  PWM_SET_LEFT(PWM_Mid-100);
+//						  PWM_SET_RIGHT(PWM_Mid-100);
+//						  delay(1200);
 						  Car_Stop();
 						  gyro_reset_flag=1;
 						  //vTaskSuspend(MileageHandle);
