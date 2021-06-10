@@ -1694,17 +1694,8 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Go_Mile_1;
+					next_state = Communication;
 					break;
-		case Line_Search:
-					if(distance_flag==0)
-						next_state = Line_Search;
-					else
-						next_state= TurnRight;
-					break;
-		/*case TurnRight:
-					next_state = Go_Mile_1;
-					break;*/
 		case TurnRight1_1:
 					next_state = Go_Mile_2_1;
 					break;
@@ -2535,21 +2526,22 @@ void WirelessTask(void const * argument)
 {
   /* USER CODE BEGIN WirelessTask */
 	uint8_t Wireless_Rx[1];
-	uint8_t test_data=0x53;
+	//uint8_t test_data=0x53;
 	vTaskSuspend(WirelessHandle);
   /* Infinite loop */
 	for(;;){
 			//HAL_UART_Transmit(&huart6,&test_data,1,0xFFFF);//retransmission part
 			sendall(); //first transmission
-//			HAL_UART_Receive(&huart6,Wireless_Rx,1,10000);//retransmission part
-//			if (Wireless_Rx[0]==NULL)
-//			{
-//				printf("go ahead\n");
-//			}
-//			else
-//			{
-//				sendall();
-//			}
+			HAL_UART_Receive(&huart6,Wireless_Rx,1,10000);//retransmission part
+			if (Wireless_Rx[0]==0)
+			{
+				printf("go ahead\n");
+				delay(500000);
+			}
+			else
+			{
+				sendall();
+			}
 			HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_10);//Green LED
 			delay(1000);
 	}
