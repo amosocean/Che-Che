@@ -1010,7 +1010,7 @@ float PID_Line_Follow(float Accept_Error)
 int PID_Apriltag(float Accept_Error)
 {
 
-	float PID_target=-30;
+	float PID_target=-25;
 	float PID_Error_Last=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
@@ -1357,7 +1357,8 @@ void StreamTask(void const * argument)
 		  	  	  	  	  vTaskSuspend(PIDCameraHandle);
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid-300);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid-300);
-		  	  	  	  	  delay(1800);
+		  	  	  	  	  //delay(1800);
+		  	  	  	  	  delay(1200);
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
 	  case Line_Search2:
@@ -1836,7 +1837,7 @@ void PIDCameraTask(void const * argument)
 	float Error = 0, Error_Total=0;
 	int32_t PID_Input=0;
 	float PID_Target=0;
-	float Kp=2,Ki=0.07,Kd=3;
+	float Kp=2,Ki=0.07,Kd=1.5;
 	float pwm_left=0,pwm_right=0;
   /* Infinite loop */
   for(;;)
@@ -1887,7 +1888,7 @@ void PIDCamera2Task(void const * argument)
 		float Error = 0, Error_Total=0;
 		int32_t PID_Input=0;
 		float PID_Target=0;
-		float Kp=2,Ki=0.07,Kd=3;
+		float Kp=2,Ki=0.07,Kd=1.5;
 		float pwm_left=0,pwm_right=0;
   /* Infinite loop */
   for(;;)
