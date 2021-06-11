@@ -86,8 +86,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1200  //无反馈时电机工作占空
-#define PWM_Lowest 150
+#define PWM_Mid 1100  //无反馈时电机工作占空
+#define PWM_Lowest 200
 #define PWM_Higest 1400 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 #define PWM_Bias 0.9331
@@ -1093,7 +1093,7 @@ void PID_Straight(float speed)
 					float initial_yaw=0;
 					float PID_Output=0,PID_Input=0;
 					float Error = 0, Error_Total=0,Error_Total_Total=0;
-					float KP=15, KI=6, KD=10, KI2=0.013;
+					float KP=15, KI=7, KD=10, KI2=0.014;
 					int32_t pwm_right=0;
 					int32_t pwm_left=0;
 					//uint8_t Flag=0; //Indicate that if verifying process begin.
@@ -1199,7 +1199,7 @@ float Ultrasonic_Feedback_right(void)
 
 	HAL_UART_Receive_IT(&huart4,(uint8_t*) &Rx_Buf_Right,3);
 	HAL_UART_Transmit(&huart4,(uint8_t*) &info,1,0xFFFF);
-	osSemaphoreWait(gomile6SemHandle, osWaitForever);
+	osSemaphoreWait(gomile6SemHandle, 500);
 	diatance_temp=right_distance.right;
 	return diatance_temp;
 
@@ -1500,7 +1500,7 @@ void stepping(void)
      float error=0;
      int32_t pulse_increment=50;
      //float pulse_increment_float=0;
-     float Kp=15;
+     float Kp=20;
      float PWM=0, pwm_left, pwm_right;
      vTaskResume(MileageHandle);
 //	 int32_t pwm_right=0;
@@ -1534,11 +1534,11 @@ void stepping(void)
 	      osSemaphoreWait(MileageSemHandle, osWaitForever);
 	  	  Car_Stop();
 	  	  delay(100);
-	  	  vTaskSuspend(MileageHandle);
+	  	  //vTaskSuspend(MileageHandle);
 	     Ultra_Input = Ultrasonic_Feedback_right();
 	     error = Ultra_Input - Ultra_Input_last;
 	     Ultra_Input_last = Ultra_Input;
-	     if(i==0)
+	     if(0)
 	     {
 	    	 continue;
 	     }
@@ -1547,8 +1547,8 @@ void stepping(void)
 //         if(error>0)
 //	     {
 	    	 PWM=Kp*error;
-	    	 PWM = PWM >  250 ? 250 : PWM;
-	    	 PWM = PWM < -250 ? -250 : PWM;
+	    	 PWM = PWM >  300 ? 300 : PWM;
+	    	 PWM = PWM < -300 ? -300 : PWM;
 	    	 pwm_right = -PWM;
 	    	 pwm_left = PWM;
 			 taskENTER_CRITICAL();
@@ -1681,7 +1681,7 @@ uint8_t State_Transition(State* current_state)
 	switch(state)
 	{
 		case Initial:
-					next_state = Go_Mile_1;
+					next_state = Go_Mile_7;
 					break;
 		case TurnRight1_1:
 					next_state = Go_Mile_2_1;
@@ -1907,31 +1907,31 @@ void StreamTask(void const * argument)
 		  	  	  	  	  //vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  break;
 	  case TurnRight:
-		  	  	  	  	  Car_Turning(-90,2);
+		  	  	  	  	  Car_Turning(-90,1);
 		  	  	  	  	  break;
 	  case TurnRight1_1:
-						  Car_Turning(45,2);
+						  Car_Turning(45,1);
 						  break;
 	  case TurnRight1_2:
-						  Car_Turning(90,2);
+						  Car_Turning(90,1);
 						  break;
 	  case TurnRight1_3:
-						  Car_Turning(135,2);
+						  Car_Turning(136,1);
 						  break;
 	  case TurnRight2_1:
-						  Car_Turning(90,2);
+						  Car_Turning(90,1);
 						  break;
 	  case TurnRight2_3:
-						  Car_Turning(-90,2);
+						  Car_Turning(-90,1);
 						  break;
 	  case TurnRight3_1:
-						  Car_Turning(-45,2);
+						  Car_Turning(-45,1);
 						  break;
 	  case TurnRight3_3:
-						  Car_Turning(45,2);
+						  Car_Turning(45,1);
 						  break;
 	  case TurnRight4:
-						  Car_Turning(-90,2);
+						  Car_Turning(-90,1);
 						  break;
 	  case TurnRight5:
 						  Car_Turning(90,2);
@@ -1952,12 +1952,20 @@ void StreamTask(void const * argument)
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
 		  	  	  	  	  //state= GoStraight;
-		  	  	  	  	  critical_distance.front=250;
+		  	  	  	  	  critical_distance.front=280;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
-		  	  	  	  	  PWM_SET_LEFT(PWM_Mid);
-		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid);
+		  	  	  	  	  gyro_reset_flag=0;
+
+		  				  vTaskResume(GyroReceiveHandle);
+		  				  Global_go_straight_speed=PWM_Mid;
+		  				PID_Straight_Reset_Flag=1;
+		  					  	  vTaskResume(GoStraightHandle);
+		  					  	  delay(500);
+		  					  	PID_Straight_Reset_Flag=0;
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
 		  	  	  	  	  osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
+		  	  	  	  	  PID_Straight_Reset_Flag=1;
+		  	  	  	  	  vTaskSuspend(GoStraightHandle);
 		  	  	  	  	  Car_Stop();
 		  	  	  	      //vTaskSuspend(DistanceCheckHandle);
 		  	  	  	  	  break;
@@ -1988,7 +1996,7 @@ void StreamTask(void const * argument)
 	  case Go_Mile_1:
 						  vTaskSuspend(DistanceCheckHandle);
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=2150;//实测
+						  pulse_incremnet=1130;//实测
 						  //pulse_incremnet=100; //小正方形
 						  camera_recieve_IT_flag=1;
 						  HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
@@ -2016,22 +2024,22 @@ void StreamTask(void const * argument)
 		  	  	  		  vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Go_Mile_2_1:
-		  	  	  	  	  Car_Go_Mile(1450, PWM_Mid);
+		  	  	  	  	  Car_Go_Mile(1280, PWM_Mid-100);
 		  	  	  	  	  break;
 	  case Go_Mile_2_2:
-	  	  	  	  	  	  Car_Go_Mile(2500, PWM_Mid);
+	  	  	  	  	  	  Car_Go_Mile(2000, PWM_Mid-100);
 	  	  	  	  	  	  break;
 	  case Go_Mile_2_3:
-	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid);
+	  	  	  	  	  	  Car_Go_Mile(1295, PWM_Mid-100);
 	  	  	  	  	  	  break;
 	  case Go_Mile_3_1:
-  	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid);
+  	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid-100);
   	  	  	  	  	  	  break;
 	  case Go_Mile_3_3:
-						  Car_Go_Mile(1450, PWM_Mid);
+						  Car_Go_Mile(1480, PWM_Mid-100);
 						  break;
 	  case Go_Mile_4:
-						  Car_Go_Mile(2500, PWM_Mid);
+						  Car_Go_Mile(2100, PWM_Mid);
 						  break;
 	  case Go_Mile_5:
 		                  Ultrasonic_Feedback_front();
@@ -2061,14 +2069,14 @@ void StreamTask(void const * argument)
 	  		              vTaskSuspend(GyroReceiveHandle);
 	  		              break;
 	  case Go_Mile_6_7:
-		  	  	  	  	  Car_Go_Mile(100, PWM_Mid);
+		  	  	  	  	  Car_Go_Mile(1, PWM_Mid);
 		  	  	  	  	  break;
 	  case Go_Mile_7:
 	  	  	              vTaskSuspend(GyroReceiveHandle);
 		                  Global_critical_pulses=0;
 		  	  	  	  	  camera_recieve_IT_flag=0;
 		  	  	  	  	  delay(500);
-		  	  	  	  	  critical_distance.front=350;
+		  	  	  	  	  critical_distance.front=280;
 		  	  	  	  	  vTaskResume(DistanceCheckHandle);
 		  	  	  	      distance_flag=0;
 	  	                  stepping();
