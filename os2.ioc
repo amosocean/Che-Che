@@ -276,5 +276,5 @@ RCC.APB1Freq_Value=42000000
 RTC.Date=20
 ProjectManager.DeviceId=STM32F407ZGTx
 ProjectManager.LibraryCopy=1
-TIM2.IC2Filter=15
+TIM2.IC2Filter=2
 isbadioc=false

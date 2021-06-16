@@ -37,13 +37,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_macro  00024a25  00000000  00000000  00040b90  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00016fb8  00000000  00000000  000655b5  2**0
+ 17 .debug_line   000170d2  00000000  00000000  000655b5  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000db556  00000000  00000000  0007c56d  2**0
+ 18 .debug_str    000db534  00000000  00000000  0007c687  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000053  00000000  00000000  00157ac3  2**0
+ 19 .comment      00000053  00000000  00000000  00157bbb  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  0000624c  00000000  00000000  00157b18  2**2
+ 20 .debug_frame  0000624c  00000000  00000000  00157c10  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -1892,8 +1892,8 @@ static void MX_TIM2_Init(void)
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
  8001304:	2300      	movs	r3, #0
  8001306:	62bb      	str	r3, [r7, #40]	; 0x28
-  sConfig.IC2Filter = 15;
- 8001308:	230f      	movs	r3, #15
+  sConfig.IC2Filter = 2;
+ 8001308:	2302      	movs	r3, #2
  800130a:	62fb      	str	r3, [r7, #44]	; 0x2c
   if (HAL_TIM_Encoder_Init(&htim2, &sConfig) != HAL_OK)
  800130c:	f107 030c 	add.w	r3, r7, #12
@@ -2898,11 +2898,11 @@ void Car_Initial(void)
  80018c6:	4910      	ldr	r1, [pc, #64]	; (8001908 <Car_Initial+0x58>)
  80018c8:	4810      	ldr	r0, [pc, #64]	; (800190c <Car_Initial+0x5c>)
  80018ca:	f005 fe5a 	bl	8007582 <HAL_UART_Receive_IT>
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????????启左侧PWM
  80018ce:	2100      	movs	r1, #0
  80018d0:	480f      	ldr	r0, [pc, #60]	; (8001910 <Car_Initial+0x60>)
  80018d2:	f004 fc87 	bl	80061e4 <HAL_TIM_PWM_Start>
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�????????????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????????启右侧PWM
  80018d6:	2100      	movs	r1, #0
  80018d8:	480e      	ldr	r0, [pc, #56]	; (8001914 <Car_Initial+0x64>)
  80018da:	f004 fc83 	bl	80061e4 <HAL_TIM_PWM_Start>
@@ -3561,8 +3561,8 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
  8001e84:	43340000 	.word	0x43340000
  8001e88:	43b40000 	.word	0x43b40000
  8001e8c:	c3340000 	.word	0xc3340000
- 8001e90:	43480000 	.word	0x43480000
- 8001e94:	c3480000 	.word	0xc3480000
+ 8001e90:	433e0000 	.word	0x433e0000
+ 8001e94:	c33e0000 	.word	0xc33e0000
  8001e98:	44af0000 	.word	0x44af0000
  8001e9c:	44af0000 	.word	0x44af0000
  8001ea0:	c4af0000 	.word	0xc4af0000
@@ -3740,9 +3740,9 @@ void PID_Straight(float speed)
  800202e:	60fb      	str	r3, [r7, #12]
 					     pwm_right = pwm_right<PWM_Lowest ? PWM_Lowest : pwm_right;
  8002030:	693b      	ldr	r3, [r7, #16]
- 8002032:	2bc8      	cmp	r3, #200	; 0xc8
+ 8002032:	2bbe      	cmp	r3, #190	; 0xbe
  8002034:	bfb8      	it	lt
- 8002036:	23c8      	movlt	r3, #200	; 0xc8
+ 8002036:	23be      	movlt	r3, #190	; 0xbe
  8002038:	613b      	str	r3, [r7, #16]
 					     pwm_right = pwm_right>PWM_Higest ? PWM_Higest : pwm_right;
  800203a:	693b      	ldr	r3, [r7, #16]
@@ -3752,9 +3752,9 @@ void PID_Straight(float speed)
  8002046:	613b      	str	r3, [r7, #16]
 					     pwm_left = pwm_left<PWM_Lowest ? PWM_Lowest : pwm_left;
  8002048:	68fb      	ldr	r3, [r7, #12]
- 800204a:	2bc8      	cmp	r3, #200	; 0xc8
+ 800204a:	2bbe      	cmp	r3, #190	; 0xbe
  800204c:	bfb8      	it	lt
- 800204e:	23c8      	movlt	r3, #200	; 0xc8
+ 800204e:	23be      	movlt	r3, #190	; 0xbe
  8002050:	60fb      	str	r3, [r7, #12]
 					     pwm_left = pwm_left>PWM_Higest ? PWM_Higest : pwm_left;
  8002052:	68fb      	ldr	r3, [r7, #12]
@@ -4800,7 +4800,7 @@ int PID_Apriltag(float Accept_Error)
  800284c:	20004150 	.word	0x20004150
  8002850:	200002fa 	.word	0x200002fa
  8002854:	c47a0000 	.word	0xc47a0000
- 8002858:	43480000 	.word	0x43480000
+ 8002858:	433e0000 	.word	0x433e0000
  800285c:	c4af0000 	.word	0xc4af0000
  8002860:	c4af0000 	.word	0xc4af0000
 
@@ -5481,8 +5481,8 @@ uint8_t State_Transition(State* current_state)
  8002db0:	08002eb3 	.word	0x08002eb3
 	{
 		case Initial:
-					next_state = Go_Mile_10;
- 8002db4:	231f      	movs	r3, #31
+					next_state = Go_Mile_1;
+ 8002db4:	2312      	movs	r3, #18
  8002db6:	73fb      	strb	r3, [r7, #15]
 					break;
  8002db8:	e0e0      	b.n	8002f7c <State_Transition+0x280>
@@ -6032,22 +6032,22 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
  80030d2:	e2ef      	b.n	80036b4 <StreamTask+0x70c>
 	  case TurnRight1_1:
-						  Car_Turning(45,1);
- 80030d4:	eef7 0a00 	vmov.f32	s1, #112	; 0x3f800000  1.0
+						  Car_Turning(45,0.5);
+ 80030d4:	eef6 0a00 	vmov.f32	s1, #96	; 0x3f000000  0.5
  80030d8:	ed9f 0a54 	vldr	s0, [pc, #336]	; 800322c <StreamTask+0x284>
  80030dc:	f7fe fc2c 	bl	8001938 <Car_Turning>
 						  break;
  80030e0:	e2e8      	b.n	80036b4 <StreamTask+0x70c>
 	  case TurnRight1_2:
-						  Car_Turning(90,1);
- 80030e2:	eef7 0a00 	vmov.f32	s1, #112	; 0x3f800000  1.0
+						  Car_Turning(90,0.5);
+ 80030e2:	eef6 0a00 	vmov.f32	s1, #96	; 0x3f000000  0.5
  80030e6:	ed9f 0a52 	vldr	s0, [pc, #328]	; 8003230 <StreamTask+0x288>
  80030ea:	f7fe fc25 	bl	8001938 <Car_Turning>
 						  break;
  80030ee:	e2e1      	b.n	80036b4 <StreamTask+0x70c>
 	  case TurnRight1_3:
-						  Car_Turning(136,1);
- 80030f0:	eef7 0a00 	vmov.f32	s1, #112	; 0x3f800000  1.0
+						  Car_Turning(136,0.5);
+ 80030f0:	eef6 0a00 	vmov.f32	s1, #96	; 0x3f000000  0.5
  80030f4:	ed9f 0a4f 	vldr	s0, [pc, #316]	; 8003234 <StreamTask+0x28c>
  80030f8:	f7fe fc1e 	bl	8001938 <Car_Turning>
 						  break;
@@ -6234,8 +6234,8 @@ void StreamTask(void const * argument)
  8003268:	4618      	mov	r0, r3
  800326a:	f006 f8a3 	bl	80093b4 <vTaskSuspend>
 						  //pulse_incremnet=6900;//室内
-						  pulse_incremnet=1000;//实测1130
- 800326e:	f44f 737a 	mov.w	r3, #1000	; 0x3e8
+						  pulse_incremnet=1130;//实测1130
+ 800326e:	f240 436a 	movw	r3, #1130	; 0x46a
  8003272:	60bb      	str	r3, [r7, #8]
 						  //pulse_incremnet=100; //小正方形
 						  camera_recieve_IT_flag=1;
@@ -6348,23 +6348,23 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
  800333c:	e1ba      	b.n	80036b4 <StreamTask+0x70c>
 	  case Go_Mile_2_1:
-		  	  	  	  	  Car_Go_Mile(1280, PWM_Mid-100);
+		  	  	  	  	  Car_Go_Mile(1450, PWM_Mid-100);
  800333e:	f44f 717a 	mov.w	r1, #1000	; 0x3e8
- 8003342:	f44f 60a0 	mov.w	r0, #1280	; 0x500
+ 8003342:	f240 50aa 	movw	r0, #1450	; 0x5aa
  8003346:	f7fe fb3d 	bl	80019c4 <Car_Go_Mile>
 		  	  	  	  	  break;
  800334a:	e1b3      	b.n	80036b4 <StreamTask+0x70c>
 	  case Go_Mile_2_2:
-	  	  	  	  	  	  Car_Go_Mile(1800, PWM_Mid-100);//2000
+	  	  	  	  	  	  Car_Go_Mile(2000, PWM_Mid-100);//2000
  800334c:	f44f 717a 	mov.w	r1, #1000	; 0x3e8
- 8003350:	f44f 60e1 	mov.w	r0, #1800	; 0x708
+ 8003350:	f44f 60fa 	mov.w	r0, #2000	; 0x7d0
  8003354:	f7fe fb36 	bl	80019c4 <Car_Go_Mile>
 	  	  	  	  	  	  break;
  8003358:	e1ac      	b.n	80036b4 <StreamTask+0x70c>
 	  case Go_Mile_2_3:
-	  	  	  	  	  	  Car_Go_Mile(1295, PWM_Mid-100);
+	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid-100);
  800335a:	f44f 717a 	mov.w	r1, #1000	; 0x3e8
- 800335e:	f240 500f 	movw	r0, #1295	; 0x50f
+ 800335e:	f240 50aa 	movw	r0, #1450	; 0x5aa
  8003362:	f7fe fb2f 	bl	80019c4 <Car_Go_Mile>
 	  	  	  	  	  	  break;
  8003366:	e1a5      	b.n	80036b4 <StreamTask+0x70c>
@@ -6824,7 +6824,7 @@ void StreamTask(void const * argument)
  80036e4:	20000328 	.word	0x20000328
  80036e8:	20004398 	.word	0x20004398
  80036ec:	2000426c 	.word	0x2000426c
- 80036f0:	fffffee8 	.word	0xfffffee8
+ 80036f0:	fffffef2 	.word	0xfffffef2
 
 080036f4 <PIDCameraTask>:
 * @param argument: Not used
@@ -7021,7 +7021,7 @@ void PIDCameraTask(void const * argument)
  80038a0:	20000010 	.word	0x20000010
  80038a4:	20000348 	.word	0x20000348
  80038a8:	20000344 	.word	0x20000344
- 80038ac:	43480000 	.word	0x43480000
+ 80038ac:	433e0000 	.word	0x433e0000
  80038b0:	43960000 	.word	0x43960000
  80038b4:	44610000 	.word	0x44610000
  80038b8:	c3960000 	.word	0xc3960000
@@ -9014,15 +9014,26 @@ void UART4_IRQHandler(void)
  800451c:	200042b4 	.word	0x200042b4
 
 08004520 <_read>:
+	_kill(status, -1);
+	while (1) {}		/* Make sure we hang here */
+}
+
+__attribute__((weak)) int _read(int file, char *ptr, int len)
+{
  8004520:	b580      	push	{r7, lr}
  8004522:	b086      	sub	sp, #24
  8004524:	af00      	add	r7, sp, #0
  8004526:	60f8      	str	r0, [r7, #12]
  8004528:	60b9      	str	r1, [r7, #8]
  800452a:	607a      	str	r2, [r7, #4]
+	int DataIdx;
+
+	for (DataIdx = 0; DataIdx < len; DataIdx++)
  800452c:	2300      	movs	r3, #0
  800452e:	617b      	str	r3, [r7, #20]
  8004530:	e00a      	b.n	8004548 <_read+0x28>
+	{
+		*ptr++ = __io_getchar();
  8004532:	f3af 8000 	nop.w
  8004536:	4601      	mov	r1, r0
  8004538:	68bb      	ldr	r3, [r7, #8]
@@ -9030,6 +9041,7 @@ void UART4_IRQHandler(void)
  800453c:	60ba      	str	r2, [r7, #8]
  800453e:	b2ca      	uxtb	r2, r1
  8004540:	701a      	strb	r2, [r3, #0]
+	for (DataIdx = 0; DataIdx < len; DataIdx++)
  8004542:	697b      	ldr	r3, [r7, #20]
  8004544:	3301      	adds	r3, #1
  8004546:	617b      	str	r3, [r7, #20]
@@ -9037,28 +9049,41 @@ void UART4_IRQHandler(void)
  800454a:	687b      	ldr	r3, [r7, #4]
  800454c:	429a      	cmp	r2, r3
  800454e:	dbf0      	blt.n	8004532 <_read+0x12>
+	}
+
+return len;
  8004550:	687b      	ldr	r3, [r7, #4]
+}
  8004552:	4618      	mov	r0, r3
  8004554:	3718      	adds	r7, #24
  8004556:	46bd      	mov	sp, r7
  8004558:	bd80      	pop	{r7, pc}
 
 0800455a <_write>:
+
+__attribute__((weak)) int _write(int file, char *ptr, int len)
+{
  800455a:	b580      	push	{r7, lr}
  800455c:	b086      	sub	sp, #24
  800455e:	af00      	add	r7, sp, #0
  8004560:	60f8      	str	r0, [r7, #12]
  8004562:	60b9      	str	r1, [r7, #8]
  8004564:	607a      	str	r2, [r7, #4]
+	int DataIdx;
+
+	for (DataIdx = 0; DataIdx < len; DataIdx++)
  8004566:	2300      	movs	r3, #0
  8004568:	617b      	str	r3, [r7, #20]
  800456a:	e009      	b.n	8004580 <_write+0x26>
+	{
+		__io_putchar(*ptr++);
  800456c:	68bb      	ldr	r3, [r7, #8]
  800456e:	1c5a      	adds	r2, r3, #1
  8004570:	60ba      	str	r2, [r7, #8]
  8004572:	781b      	ldrb	r3, [r3, #0]
  8004574:	4618      	mov	r0, r3
  8004576:	f7fe fbaf 	bl	8002cd8 <__io_putchar>
+	for (DataIdx = 0; DataIdx < len; DataIdx++)
  800457a:	697b      	ldr	r3, [r7, #20]
  800457c:	3301      	adds	r3, #1
  800457e:	617b      	str	r3, [r7, #20]
@@ -9066,18 +9091,26 @@ void UART4_IRQHandler(void)
  8004582:	687b      	ldr	r3, [r7, #4]
  8004584:	429a      	cmp	r2, r3
  8004586:	dbf1      	blt.n	800456c <_write+0x12>
+	}
+	return len;
  8004588:	687b      	ldr	r3, [r7, #4]
+}
  800458a:	4618      	mov	r0, r3
  800458c:	3718      	adds	r7, #24
  800458e:	46bd      	mov	sp, r7
  8004590:	bd80      	pop	{r7, pc}
 
 08004592 <_close>:
+
+int _close(int file)
+{
  8004592:	b480      	push	{r7}
  8004594:	b083      	sub	sp, #12
  8004596:	af00      	add	r7, sp, #0
  8004598:	6078      	str	r0, [r7, #4]
+	return -1;
  800459a:	f04f 33ff 	mov.w	r3, #4294967295
+}
  800459e:	4618      	mov	r0, r3
  80045a0:	370c      	adds	r7, #12
  80045a2:	46bd      	mov	sp, r7
@@ -9085,15 +9118,22 @@ void UART4_IRQHandler(void)
  80045a8:	4770      	bx	lr
 
 080045aa <_fstat>:
+
+
+int _fstat(int file, struct stat *st)
+{
  80045aa:	b480      	push	{r7}
  80045ac:	b083      	sub	sp, #12
  80045ae:	af00      	add	r7, sp, #0
  80045b0:	6078      	str	r0, [r7, #4]
  80045b2:	6039      	str	r1, [r7, #0]
+	st->st_mode = S_IFCHR;
  80045b4:	683b      	ldr	r3, [r7, #0]
  80045b6:	f44f 5200 	mov.w	r2, #8192	; 0x2000
  80045ba:	605a      	str	r2, [r3, #4]
+	return 0;
  80045bc:	2300      	movs	r3, #0
+}
  80045be:	4618      	mov	r0, r3
  80045c0:	370c      	adds	r7, #12
  80045c2:	46bd      	mov	sp, r7
@@ -9101,11 +9141,16 @@ void UART4_IRQHandler(void)
  80045c8:	4770      	bx	lr
 
 080045ca <_isatty>:
+
+int _isatty(int file)
+{
  80045ca:	b480      	push	{r7}
  80045cc:	b083      	sub	sp, #12
  80045ce:	af00      	add	r7, sp, #0
  80045d0:	6078      	str	r0, [r7, #4]
+	return 1;
  80045d2:	2301      	movs	r3, #1
+}
  80045d4:	4618      	mov	r0, r3
  80045d6:	370c      	adds	r7, #12
  80045d8:	46bd      	mov	sp, r7
@@ -9113,13 +9158,18 @@ void UART4_IRQHandler(void)
  80045de:	4770      	bx	lr
 
 080045e0 <_lseek>:
+
+int _lseek(int file, int ptr, int dir)
+{
  80045e0:	b480      	push	{r7}
  80045e2:	b085      	sub	sp, #20
  80045e4:	af00      	add	r7, sp, #0
  80045e6:	60f8      	str	r0, [r7, #12]
  80045e8:	60b9      	str	r1, [r7, #8]
  80045ea:	607a      	str	r2, [r7, #4]
+	return 0;
  80045ec:	2300      	movs	r3, #0
+}
  80045ee:	4618      	mov	r0, r3
  80045f0:	3714      	adds	r7, #20
  80045f2:	46bd      	mov	sp, r7
@@ -9128,23 +9178,44 @@ void UART4_IRQHandler(void)
 	...
 
 080045fc <_sbrk>:
+ *
+ * @param incr Memory size
+ * @return Pointer to allocated memory
+ */
+void *_sbrk(ptrdiff_t incr)
+{
  80045fc:	b580      	push	{r7, lr}
  80045fe:	b086      	sub	sp, #24
  8004600:	af00      	add	r7, sp, #0
  8004602:	6078      	str	r0, [r7, #4]
+  extern uint8_t _end; /* Symbol defined in the linker script */
+  extern uint8_t _estack; /* Symbol defined in the linker script */
+  extern uint32_t _Min_Stack_Size; /* Symbol defined in the linker script */
+  const uint32_t stack_limit = (uint32_t)&_estack - (uint32_t)&_Min_Stack_Size;
  8004604:	4a14      	ldr	r2, [pc, #80]	; (8004658 <_sbrk+0x5c>)
  8004606:	4b15      	ldr	r3, [pc, #84]	; (800465c <_sbrk+0x60>)
  8004608:	1ad3      	subs	r3, r2, r3
  800460a:	617b      	str	r3, [r7, #20]
+  const uint8_t *max_heap = (uint8_t *)stack_limit;
  800460c:	697b      	ldr	r3, [r7, #20]
  800460e:	613b      	str	r3, [r7, #16]
+  uint8_t *prev_heap_end;
+
+  /* Initialize heap end at first call */
+  if (NULL == __sbrk_heap_end)
  8004610:	4b13      	ldr	r3, [pc, #76]	; (8004660 <_sbrk+0x64>)
  8004612:	681b      	ldr	r3, [r3, #0]
  8004614:	2b00      	cmp	r3, #0
  8004616:	d102      	bne.n	800461e <_sbrk+0x22>
+  {
+    __sbrk_heap_end = &_end;
  8004618:	4b11      	ldr	r3, [pc, #68]	; (8004660 <_sbrk+0x64>)
  800461a:	4a12      	ldr	r2, [pc, #72]	; (8004664 <_sbrk+0x68>)
  800461c:	601a      	str	r2, [r3, #0]
+  }
+
+  /* Protect heap from growing into the reserved MSP stack */
+  if (__sbrk_heap_end + incr > max_heap)
  800461e:	4b10      	ldr	r3, [pc, #64]	; (8004660 <_sbrk+0x64>)
  8004620:	681a      	ldr	r2, [r3, #0]
  8004622:	687b      	ldr	r3, [r7, #4]
@@ -9152,22 +9223,32 @@ void UART4_IRQHandler(void)
  8004626:	693a      	ldr	r2, [r7, #16]
  8004628:	429a      	cmp	r2, r3
  800462a:	d207      	bcs.n	800463c <_sbrk+0x40>
+  {
+    errno = ENOMEM;
  800462c:	f006 fa5e 	bl	800aaec <__errno>
  8004630:	4603      	mov	r3, r0
  8004632:	220c      	movs	r2, #12
  8004634:	601a      	str	r2, [r3, #0]
+    return (void *)-1;
  8004636:	f04f 33ff 	mov.w	r3, #4294967295
  800463a:	e009      	b.n	8004650 <_sbrk+0x54>
+  }
+
+  prev_heap_end = __sbrk_heap_end;
  800463c:	4b08      	ldr	r3, [pc, #32]	; (8004660 <_sbrk+0x64>)
  800463e:	681b      	ldr	r3, [r3, #0]
  8004640:	60fb      	str	r3, [r7, #12]
+  __sbrk_heap_end += incr;
  8004642:	4b07      	ldr	r3, [pc, #28]	; (8004660 <_sbrk+0x64>)
  8004644:	681a      	ldr	r2, [r3, #0]
  8004646:	687b      	ldr	r3, [r7, #4]
  8004648:	4413      	add	r3, r2
  800464a:	4a05      	ldr	r2, [pc, #20]	; (8004660 <_sbrk+0x64>)
  800464c:	6013      	str	r3, [r2, #0]
+
+  return (void *)prev_heap_end;
  800464e:	68fb      	ldr	r3, [r7, #12]
+}
  8004650:	4618      	mov	r0, r3
  8004652:	3718      	adds	r7, #24
  8004654:	46bd      	mov	sp, r7
@@ -9208,46 +9289,103 @@ void SystemInit(void)
  8004688:	e000ed00 	.word	0xe000ed00
 
 0800468c <Reset_Handler>:
+
+    .section  .text.Reset_Handler
+  .weak  Reset_Handler
+  .type  Reset_Handler, %function
+Reset_Handler:  
+  ldr   sp, =_estack     /* set stack pointer */
  800468c:	f8df d034 	ldr.w	sp, [pc, #52]	; 80046c4 <LoopFillZerobss+0x12>
+
+/* Copy the data segment initializers from flash to SRAM */  
+  ldr r0, =_sdata
  8004690:	480d      	ldr	r0, [pc, #52]	; (80046c8 <LoopFillZerobss+0x16>)
+  ldr r1, =_edata
  8004692:	490e      	ldr	r1, [pc, #56]	; (80046cc <LoopFillZerobss+0x1a>)
+  ldr r2, =_sidata
  8004694:	4a0e      	ldr	r2, [pc, #56]	; (80046d0 <LoopFillZerobss+0x1e>)
+  movs r3, #0
  8004696:	2300      	movs	r3, #0
+  b LoopCopyDataInit
  8004698:	e002      	b.n	80046a0 <LoopCopyDataInit>
 
 0800469a <CopyDataInit>:
+
+CopyDataInit:
+  ldr r4, [r2, r3]
  800469a:	58d4      	ldr	r4, [r2, r3]
+  str r4, [r0, r3]
  800469c:	50c4      	str	r4, [r0, r3]
+  adds r3, r3, #4
  800469e:	3304      	adds	r3, #4
 
 080046a0 <LoopCopyDataInit>:
+
+LoopCopyDataInit:
+  adds r4, r0, r3
  80046a0:	18c4      	adds	r4, r0, r3
+  cmp r4, r1
  80046a2:	428c      	cmp	r4, r1
+  bcc CopyDataInit
  80046a4:	d3f9      	bcc.n	800469a <CopyDataInit>
+  
+/* Zero fill the bss segment. */
+  ldr r2, =_sbss
  80046a6:	4a0b      	ldr	r2, [pc, #44]	; (80046d4 <LoopFillZerobss+0x22>)
+  ldr r4, =_ebss
  80046a8:	4c0b      	ldr	r4, [pc, #44]	; (80046d8 <LoopFillZerobss+0x26>)
+  movs r3, #0
  80046aa:	2300      	movs	r3, #0
+  b LoopFillZerobss
  80046ac:	e001      	b.n	80046b2 <LoopFillZerobss>
 
 080046ae <FillZerobss>:
+
+FillZerobss:
+  str  r3, [r2]
  80046ae:	6013      	str	r3, [r2, #0]
+  adds r2, r2, #4
  80046b0:	3204      	adds	r2, #4
 
 080046b2 <LoopFillZerobss>:
+
+LoopFillZerobss:
+  cmp r2, r4
  80046b2:	42a2      	cmp	r2, r4
+  bcc FillZerobss
  80046b4:	d3fb      	bcc.n	80046ae <FillZerobss>
+
+/* Call the clock system intitialization function.*/
+  bl  SystemInit   
  80046b6:	f7ff ffd7 	bl	8004668 <SystemInit>
+/* Call static constructors */
+    bl __libc_init_array
  80046ba:	f006 fa1d 	bl	800aaf8 <__libc_init_array>
+/* Call the application's entry point.*/
+  bl  main
  80046be:	f7fc fbb3 	bl	8000e28 <main>
+  bx  lr    
  80046c2:	4770      	bx	lr
+  ldr   sp, =_estack     /* set stack pointer */
  80046c4:	20020000 	.word	0x20020000
+  ldr r0, =_sdata
  80046c8:	20000000 	.word	0x20000000
+  ldr r1, =_edata
  80046cc:	20000088 	.word	0x20000088
+  ldr r2, =_sidata
  80046d0:	0800be40 	.word	0x0800be40
+  ldr r2, =_sbss
  80046d4:	20000088 	.word	0x20000088
+  ldr r4, =_ebss
  80046d8:	200043fc 	.word	0x200043fc
 
 080046dc <ADC_IRQHandler>:
+ * @retval None       
+*/
+    .section  .text.Default_Handler,"ax",%progbits
+Default_Handler:
+Infinite_Loop:
+  b  Infinite_Loop
  80046dc:	e7fe      	b.n	80046dc <ADC_IRQHandler>
 	...
 
