@@ -2474,11 +2474,11 @@ void ColorcheckTask(void const * argument)
 void WirelessTask(void const * argument)
 {
   /* USER CODE BEGIN WirelessTask */
-	uint8_t Wireless_Rx[1];
 	//uint8_t test_data=0x53;
 	vTaskSuspend(WirelessHandle);
   /* Infinite loop */
 	for(;;){
+			uint8_t Wireless_Rx[1]={0};
 			//HAL_UART_Transmit(&huart6,&test_data,1,0xFFFF);//retransmission part
 			sendall(); //first transmission
 			HAL_UART_Receive(&huart6,Wireless_Rx,1,10000);//retransmission part
