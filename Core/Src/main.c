@@ -33,7 +33,7 @@ typedef enum State {Initial=1,
 					Line_Search,Line_Search2,
 					TurnRight,TurnRight2,TurnLeft,
 					GoStraight_Until_Barrier,
-					Go_Mile_1,Go_Mile_2_Until_Barrier,Go_Mile_2_Until_Apriltag,Go_Line_Follow,Go_to_Bridge,
+					Go_Mile_1,Go_Mile_2,Go_Mile_2_Until_Barrier,Go_Mile_2_Until_Apriltag,Go_Line_Follow,Go_to_Bridge,
 					Cross_bridge,
 					Mile_Adjust,
 					Apriltag_Adjust1,Apriltag_Adjust2,Apriltag_Check,Apriltag_Check2,
@@ -1197,7 +1197,7 @@ uint8_t State_Transition(State* current_state)
 					next_state= Cross_bridge;
 					break;
 		case Cross_bridge:
-					next_state= Go_Mile_2_Until_Apriltag;
+					next_state= Go_Mile_2;
 					break;
 		case GoStraight_Until_Barrier:
 					//osSemaphoreWait(CriticalDistanceSemHandle, osWaitForever);
@@ -1216,6 +1216,9 @@ uint8_t State_Transition(State* current_state)
 //						next_state = Mile_Adjust;
 //						}
 					next_state=Go_to_Bridge;
+					break;
+		case Go_Mile_2:
+					next_state=TurnRight2;
 					break;
 		case Go_Mile_2_Until_Barrier:
 					next_state=TurnRight2;
@@ -1462,6 +1465,28 @@ void StreamTask(void const * argument)
 		  	  	  		  Car_Stop();
 		  	  	  		  gyro_reset_flag=1;
 		  	  	  		  //vTaskSuspend(MileageHandle);
+		  	  	  	  	  break;
+	  case Go_Mile_2:
+					  	  vTaskSuspend(DistanceCheckHandle);
+						  pulse_incremnet=500;//To the path
+						  critical_pulses=0;
+						  vTaskResume(MileageHandle);
+						  delay(100);
+						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+						  critical_pulses=pulse_incremnet+number_of_pulses;
+						  gyro_reset_flag=0;
+						  vTaskResume(GyroReceiveHandle);
+						  PID_Straight_Reset_Flag=1;
+						  go_straight_speed=PWM_Mid-100;
+						  //go_straight_speed=2000;
+						  vTaskResume(GoStraightHandle);
+						  delay(200);
+						  PID_Straight_Reset_Flag=0;
+						  osSemaphoreWait(MileageSemHandle, osWaitForever);
+						  PID_Straight_Reset_Flag=1;
+						  vTaskSuspend(GoStraightHandle);
+						  Car_Stop();
+						  gyro_reset_flag=1;
 		  	  	  	  	  break;
 	  case Go_Mile_2_Until_Barrier:
 		  	  	  	  	  critical_distance.front=250;
