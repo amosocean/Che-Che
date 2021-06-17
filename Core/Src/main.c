@@ -86,8 +86,8 @@ typedef struct Distance
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define PWM_Mid 1100  //无反馈时电机工作占空
-#define PWM_Lowest 190
+#define PWM_Mid 1300  //无反馈时电机工作占空
+#define PWM_Lowest 180
 #define PWM_Higest 1400 //for our motor, this value should less than 1300
 #define Angle_stable_cycles 3
 #define PWM_Bias 0.9331
@@ -155,7 +155,7 @@ uint8_t finalcolor;
 
 //PID PV
 volatile uint16_t PID_Target=0;
-volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�????????????????????????????????????????????????????????????????????????????
+volatile float Kp = 6, Ki = 0, Kd =0;     // PID系数，这里只用到PI控制�?????????????????????????????????????????????????????????????????????????????
 //PID PV END
 
 //HC_12_PV
@@ -455,7 +455,7 @@ static void MX_RTC_Init(void)
   }
   sDate.WeekDay = RTC_WEEKDAY_SUNDAY;
   sDate.Month = RTC_MONTH_JUNE;
-  sDate.Date = 0x20;
+  sDate.Date = 0x17;
   sDate.Year = 0x21;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
@@ -897,8 +897,8 @@ void Car_Initial(void)
 	state=Initial;
 	temp_state = Unknow;
 	HAL_UART_Receive_IT(&huart2,(uint8_t*) &Rx_Buf,2);
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????????启左侧PWM
-	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�?????????????????????????????????????????????????????????????????????????????????启右侧PWM
+	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????????????????启左侧PWM
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);//�??????????????????????????????????????????????????????????????????????????????????启右侧PWM
 	taskEXIT_CRITICAL();
 	HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
 	__HAL_TIM_SET_COUNTER(&htim2,1000);
@@ -1211,11 +1211,11 @@ float Ultrasonic_Feedback_right(void)
 //	uint8_t info=0xA0;
 //	uint8_t Rx_Buf[3]={0,0,0};
 //	uint32_t Data=0x00000000;
-//	Distance distance={0.0,0.0};//右侧超声波数�?????????????????????
+//	Distance distance={0.0,0.0};//右侧超声波数�??????????????????????
 //
 //	uint8_t _Rx_Buf[3]={0,0,0};
 //	uint32_t _Data=0x00000000;
-//	Distance _distance={0.0,0.0};//前方超声波数�?????????????????????
+//	Distance _distance={0.0,0.0};//前方超声波数�??????????????????????
 //
 //	                    float PID_target=0;
 //						float PID_Error_Last=0;
@@ -1538,6 +1538,15 @@ void stepping(void)
 	  	  delay(100);
 	  	  //vTaskSuspend(MileageHandle);
 	     Ultra_Input = Ultrasonic_Feedback_right();
+	     if(Ultra_Input < 100)
+	     {
+	    	 taskENTER_CRITICAL();
+	    	 	         PWM_SET_RIGHT (300);
+	    	 	         PWM_SET_LEFT(-300);
+	    	 			 taskEXIT_CRITICAL();
+	    	 			 delay(100);
+	    	 			 continue;
+	     }
 	     error = Ultra_Input - Ultra_Input_last;
 	     Ultra_Input_last = Ultra_Input;
 	     if(0)
@@ -1609,6 +1618,15 @@ void stepping2(void)
 	     {
 	    	 return;
 	     }
+	     if(Ultra_Input < 100)
+	     	     {
+	     	    	 taskENTER_CRITICAL();
+	     	    	 	         PWM_SET_RIGHT (300);
+	     	    	 	         PWM_SET_LEFT(-300);
+	     	    	 			 taskEXIT_CRITICAL();
+	     	    	 			 delay(100);
+	     	    	 			 continue;
+	     	     }
 	     error = Ultra_Input - Ultra_Input_last;
 	     Ultra_Input_last_last = Ultra_Input_last;
 	     Ultra_Input_last = Ultra_Input;
@@ -1912,13 +1930,13 @@ void StreamTask(void const * argument)
 		  	  	  	  	  Car_Turning(-90,0.5);
 		  	  	  	  	  break;
 	  case TurnRight1_1:
-						  Car_Turning(45,0.5);
+						  Car_Turning(45,1);
 						  break;
 	  case TurnRight1_2:
-						  Car_Turning(90,0.5);
+						  Car_Turning(90,1);
 						  break;
 	  case TurnRight1_3:
-						  Car_Turning(136,0.5);
+						  Car_Turning(137,1);
 						  break;
 	  case TurnRight2_1:
 						  Car_Turning(90,1);
@@ -1933,7 +1951,7 @@ void StreamTask(void const * argument)
 						  Car_Turning(45,1);
 						  break;
 	  case TurnRight4:
-						  Car_Turning(-90,1);
+						  Car_Turning(-90,2);
 						  break;
 	  case TurnRight5:
 						  Car_Turning(90,2);
@@ -1945,7 +1963,7 @@ void StreamTask(void const * argument)
 						  Car_Turning(90,2);
 						  break;
 	  case TurnRight8:
-						  Car_Turning(90,2);
+						  Car_Turning(91,2);
 						  break;
 //	  case Go_Mile_5:
 //		  	  	  	  	  //state= Idle;
@@ -2026,22 +2044,22 @@ void StreamTask(void const * argument)
 		  	  	  		  vTaskSuspend(MileageHandle);
 		  	  	  	  	  break;
 	  case Go_Mile_2_1:
-		  	  	  	  	  Car_Go_Mile(1450, PWM_Mid-100);
+		  	  	  	  	  Car_Go_Mile(1600, PWM_Mid-100);
 		  	  	  	  	  break;
 	  case Go_Mile_2_2:
 	  	  	  	  	  	  Car_Go_Mile(2000, PWM_Mid-100);//2000
 	  	  	  	  	  	  break;
 	  case Go_Mile_2_3:
-	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid-100);
+	  	  	  	  	  	  Car_Go_Mile(1600, PWM_Mid-100);
 	  	  	  	  	  	  break;
 	  case Go_Mile_3_1:
-  	  	  	  	  	  	  Car_Go_Mile(1450, PWM_Mid-100);
+  	  	  	  	  	  	  Car_Go_Mile(1600, PWM_Mid-100);
   	  	  	  	  	  	  break;
 	  case Go_Mile_3_3:
 						  Car_Go_Mile(1480, PWM_Mid-100);
 						  break;
 	  case Go_Mile_4:
-						  Car_Go_Mile(2100, PWM_Mid);
+						  Car_Go_Mile(2700, 2000);
 						  break;
 	  case Go_Mile_5:
 		  	  	  	  	  //state= Idle;
@@ -2134,10 +2152,10 @@ void StreamTask(void const * argument)
 						  vTaskSuspend(MileageHandle);
 						  break;
 	  case Go_Mile_9:
-  	  	  	  	  	  	  Car_Go_Mile(1600, PWM_Mid);
+  	  	  	  	  	  	  Car_Go_Mile(1300, PWM_Mid);
   	  	  	  	  	  	  break;
 	  case Go_Mile_10:
-  	  	  	  	  	  	  Car_Go_Mile(3550, PWM_Mid);
+  	  	  	  	  	  	  Car_Go_Mile(7000, PWM_Mid-100);
   	  	  	  	  	  	  break;
 	  case Apriltag_Check:
 		  	  	  	  	  Car_Stop();
@@ -2151,7 +2169,7 @@ void StreamTask(void const * argument)
 						  delay(50);
 						  distance_flag=0;
 						  delay(500);
-						  PID_Apriltag(5);
+						  PID_Apriltag(10);
 						  Car_Stop();
 						  break;
 	  case Feeding:
