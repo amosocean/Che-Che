@@ -60,7 +60,7 @@ typedef struct Distance
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define PWM_Mid 800 //无反馈时电机工作占空
-#define PWM_Lowest 200
+#define PWM_Lowest 180
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define PWM_Bias 0.9331
 //#define PWM_Bias 1
@@ -833,7 +833,7 @@ int PID_Turning(float increment_angle,float Accept_Error)//If we want to turn ri
 	float initial_yaw=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
-	float KP=15, KI=2, KD=0;
+	float KP=15, KI=2, KD=4;
 	int t=0;
 	float pwm_left=0,pwm_right=0;
 	uint8_t Flag=0; //Indicate that if verifying process begin.
@@ -1010,11 +1010,11 @@ float PID_Line_Follow(float Accept_Error)
 int PID_Apriltag(float Accept_Error)
 {
 
-	float PID_target=-25;
+	float PID_target=-29;
 	float PID_Error_Last=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
-	float KP=2, KI=0, KD=0.5;
+	float KP=2, KI=0.1, KD=1;
 	int t=0;
 	uint8_t Flag=0; //Indicate that if verifying process begin.
 	Car_Stop();
@@ -1361,7 +1361,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  PWM_SET_LEFT(PWM_Mid-300);
 		  	  	  	  	  PWM_SET_RIGHT(PWM_Mid-300);
 		  	  	  	  	  //delay(1800);
-		  	  	  	  	  delay(1200);
+		  	  	  	  	  delay(1700);
 		  	  	  	  	  Car_Stop();
 		  	  	  	  	  break;
 	  case Line_Search2:
@@ -1413,7 +1413,7 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,2);
+		  	  	  	  	  PID_Turning(-90,1);
 		  	  	  	  	  gyro_reset_flag=1;
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
@@ -1468,7 +1468,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case Go_Mile_2:
 					  	  vTaskSuspend(DistanceCheckHandle);
-						  pulse_incremnet=500;//To the path
+						  pulse_incremnet=420;//To the path
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
