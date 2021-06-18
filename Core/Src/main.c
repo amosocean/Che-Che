@@ -37,7 +37,7 @@ typedef enum State {Initial=1,
 					Cross_bridge,
 					Mile_Adjust,
 					Apriltag_Adjust1,Apriltag_Adjust2,Apriltag_Check,Apriltag_Check2,
-					Idle,
+					Idle,Test,
 					Unknow} State;
 typedef struct Angle
 {
@@ -62,7 +62,7 @@ typedef struct Distance
 #define PWM_Mid 800 //无反馈时电机工作占空
 #define PWM_Lowest 180
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
-#define PWM_Bias 0.9331
+#define PWM_Bias 0.9315
 //#define PWM_Bias 1
 #define Angle_stable_cycles 3
 /* USER CODE END PM */
@@ -1010,7 +1010,7 @@ float PID_Line_Follow(float Accept_Error)
 int PID_Apriltag(float Accept_Error)
 {
 
-	float PID_target=-29;
+	float PID_target=0;
 	float PID_Error_Last=0;
 	float PID_Output=0,PID_Input=0;;
 	float Error = 0, Error_Total=0;
@@ -1031,7 +1031,7 @@ int PID_Apriltag(float Accept_Error)
 	  	 if(( (Error > -Accept_Error) && (Error < Accept_Error) ) && Flag == 0)
 	  	 {
 	  		 t++;
-	  		if(t>2)
+	  		if(t>3)
 	  		{
 	  			Flag = 1;
 	  			t=0;
@@ -1177,6 +1177,9 @@ uint8_t State_Transition(State* current_state)
 	{
 		case Initial:
 					next_state = Line_Search;
+					break;
+		case Test:
+					next_state=Test;
 					break;
 		case Line_Search:
 					next_state = Apriltag_Check;
@@ -1370,6 +1373,10 @@ void StreamTask(void const * argument)
 						  vTaskResume(PIDCamera2Handle);
 						  delay(60000);
 		  	  	  	  	  break;
+	  case Test:
+		  	  	  	  	  PWM_SET_LEFT(1500);
+		  	  	  	  	  PWM_SET_RIGHT(1500);
+		  	  	  	  	  break;
 	  case Go_Line_Follow:
 		  	  	  	  	  break;
 	  case Go_to_Bridge:
@@ -1391,7 +1398,7 @@ void StreamTask(void const * argument)
 						  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  PID_Straight_Reset_Flag=1;
-		  	  	  	  	  go_straight_speed=2000;
+		  	  	  	  	  go_straight_speed=1700;
 		  	  	  	  	  //go_straight_speed=2000;
 		  	  	  	  	  vTaskResume(GoStraightHandle);
 		  	  	  	  	  delay(200);
