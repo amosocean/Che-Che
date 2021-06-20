@@ -60,7 +60,7 @@ typedef struct Distance
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define PWM_Mid 800 //无反馈时电机工作占空
-#define PWM_Lowest 180
+#define PWM_Lowest 170
 #define PWM_Higest 2000 //for our motor, this value should less than 1300
 #define PWM_Bias 0.9315
 //#define PWM_Bias 1
@@ -1420,7 +1420,7 @@ void StreamTask(void const * argument)
 	  	  	  	  	  	  gyro_reset_flag=0;
 		  	  	  	  	  vTaskResume(GyroReceiveHandle);
 		  	  	  	  	  delay(500);
-		  	  	  	  	  PID_Turning(-90,1);
+		  	  	  	  	  PID_Turning(-90,0.5);
 		  	  	  	  	  gyro_reset_flag=1;
 		  	  	  	  	  Car_Stop();
 		  		  	  	  break;
@@ -1475,7 +1475,7 @@ void StreamTask(void const * argument)
 		  	  	  	  	  break;
 	  case Go_Mile_2:
 					  	  vTaskSuspend(DistanceCheckHandle);
-						  pulse_incremnet=420;//To the path
+						  pulse_incremnet=430;//To the path
 						  critical_pulses=0;
 						  vTaskResume(MileageHandle);
 						  delay(100);
